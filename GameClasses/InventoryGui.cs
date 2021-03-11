@@ -40,9 +40,9 @@ namespace ValheimRecycle
             if (ValheimRecycle.instance.InTabDeconstruct())
             {
                 Text component3 = elementRoot.transform.Find("res_amount").GetComponent<Text>();
-                int amount = req.GetAmount(quality);
+                int amount = Utils.GetModifiedAmount(quality, req);
 
-                component3.text = ((int)Math.Round(ValheimRecycle.instance.resourceMultiplier.Value * amount, 0)).ToString();
+                component3.text = amount.ToString();
                 component3.color = Color.green;
             }
         }

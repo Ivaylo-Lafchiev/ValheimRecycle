@@ -10,6 +10,10 @@ namespace ValheimRecycle
     public class Utils
     {
 
+        public static int GetModifiedAmount(int quality, Piece.Requirement requirement)
+        {
+            return (int)Math.Round(ValheimRecycle.instance.resourceMultiplier.Value * requirement.GetAmount(quality), 0);
+        }
 
         public static bool HaveEmptySlotsForRecipe(Inventory inventory, Recipe recipe, int quality)
         {
@@ -18,7 +22,8 @@ namespace ValheimRecycle
 
             foreach (Piece.Requirement req in recipe.m_resources)
             {
-                if (req.GetAmount(quality) > 0) requiredSlots++;
+                Debug.Log(ValheimRecycle.instance.resourceMultiplier.Value * req.GetAmount(quality));
+                if (GetModifiedAmount(quality, req) > 0) requiredSlots++;
             }
             if (emptySlots >= requiredSlots) return true;
             return false;
@@ -32,8 +37,7 @@ namespace ValheimRecycle
                 if (requirement.m_resItem)
                 {
 
-                    int amount = requirement.GetAmount(qualityLevel + 1);
-                    amount = (int)Math.Round(ValheimRecycle.instance.resourceMultiplier.Value * amount, 0);
+                    int amount = GetModifiedAmount(qualityLevel + 1, requirement);
                     if (amount > 0)
                     {
                         Debug.Log("Adding item: " + requirement.m_resItem.name);
