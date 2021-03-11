@@ -1,4 +1,5 @@
 using HarmonyLib;
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
@@ -33,12 +34,15 @@ namespace ValheimRecycle
 
         [HarmonyPostfix]
         [HarmonyPatch("SetupRequirement")]
-        internal static void PostfixSetupRequirement(Transform elementRoot)
+        internal static void PostfixSetupRequirement(Transform elementRoot, Piece.Requirement req, int quality)
         {
             // don't flash the resource amount in requirements window if deconstructing
             if (ValheimRecycle.instance.InTabDeconstruct())
             {
                 Text component3 = elementRoot.transform.Find("res_amount").GetComponent<Text>();
+                int amount = req.GetAmount(quality);
+
+                component3.text = ((int)Math.Round(ValheimRecycle.instance.resourceMultiplier.Value * amount, 0)).ToString();
                 component3.color = Color.green;
             }
         }

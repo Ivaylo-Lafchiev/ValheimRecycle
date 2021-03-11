@@ -1,4 +1,5 @@
 ﻿using BepInEx;
+using BepInEx.Configuration;
 using HarmonyLib;
 using UnityEngine;
 using UnityEngine.UI;
@@ -17,6 +18,11 @@ namespace ValheimRecycle
         Vector3 craftingPos;
         Harmony harmony;
 
+        #region Config
+        internal ConfigEntry<RecycleConfig.TabPositions> tabPosition;
+        internal ConfigEntry<float> resourceMultiplier;
+        #endregion
+
         internal bool InTabDeconstruct()
         {
             return !recycleButton.interactable;
@@ -28,6 +34,15 @@ namespace ValheimRecycle
             instance = this;
             harmony = Harmony.CreateAndPatchAll(typeof(InventoryGuiPatch));
 
+            tabPosition = Config.Bind("General",   
+                             "TabPosition",  
+                             RecycleConfig.TabPositions.Left,
+                             "The Recycle tab's position in the crafting menu after Upgrade. (Requires restart)");
+            resourceMultiplier = Config.Bind("General",
+                 "ResourceMultiplier",
+                 1f,
+                 new ConfigDescription("The amount of resources to return from recycling (0 to 1, where 1 returns 100% of the resources and 0 returns 0%)", new AcceptableValueRange<float>(0,1))
+                 );
         }
         internal void OnDestroy()
         {
@@ -55,7 +70,7 @@ namespace ValheimRecycle
             recycleObject.name = "Recycle";
             recycleObject.GetComponentInChildren<Text>().text = "RECYCLE";
             width = recycleObject.GetComponent<RectTransform>().rect.width;
-            craftingPos = new Vector3(recycleObject.transform.localPosition.x + width + 10f, recycleObject.transform.localPosition.y, recycleObject.transform.localPosition.z);
+            craftingPos = new Vector3(recycleObject.transform.localPosition.x + ((width + 10f) * ((int)tabPosition.Value + 1)), recycleObject.transform.localPosition.y, recycleObject.transform.localPosition.z);
             recycleButton = recycleObject.GetComponent<Button>();
             recycleButton.transform.localPosition = craftingPos;
             recycleButton.interactable = true;

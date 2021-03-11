@@ -33,12 +33,13 @@ namespace ValheimRecycle
                 {
 
                     int amount = requirement.GetAmount(qualityLevel + 1);
+                    amount = (int)Math.Round(ValheimRecycle.instance.resourceMultiplier.Value * amount, 0);
                     if (amount > 0)
                     {
                         Debug.Log("Adding item: " + requirement.m_resItem.name);
                         Debug.Log("Amount: " + requirement.GetAmount(qualityLevel + 1));
 
-                        inventory.AddItem(requirement.m_resItem.name, requirement.GetAmount(qualityLevel + 1), requirement.m_resItem.m_itemData.m_quality, requirement.m_resItem.m_itemData.m_variant, 0L, "");
+                        inventory.AddItem(requirement.m_resItem.name, amount, requirement.m_resItem.m_itemData.m_quality, requirement.m_resItem.m_itemData.m_variant, 0L, "");
                     }
                 }
             }
