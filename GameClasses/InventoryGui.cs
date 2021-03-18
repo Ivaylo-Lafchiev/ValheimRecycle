@@ -14,10 +14,14 @@ namespace ValheimRecycle
 
         [HarmonyPostfix]
         [HarmonyPatch("Update")]
+        [HarmonyBefore(new string[] { "randyknapp.mods.epicloot" })]
+        [HarmonyPriority(10000)]
         internal static void PostfixUpdate(InventoryGui __instance) => ValheimRecycle.instance?.RebuildRecycleTab();
 
         [HarmonyPrefix]
         [HarmonyPatch("OnTabCraftPressed")]
+        [HarmonyBefore(new string[] { "randyknapp.mods.epicloot" })]
+        [HarmonyPriority(10000)]
         internal static bool PrefixOnTabCraftPressed(InventoryGui __instance)
         {
             ValheimRecycle.instance.recycleButton.interactable = true;
@@ -25,6 +29,8 @@ namespace ValheimRecycle
         }
         [HarmonyPrefix]
         [HarmonyPatch("OnTabUpgradePressed")]
+        [HarmonyBefore(new string[] { "randyknapp.mods.epicloot" })]
+        [HarmonyPriority(10000)]
         internal static bool PrefixOnTabUpgradePressed(InventoryGui __instance)
         {
             ValheimRecycle.instance.recycleButton.interactable = true;
@@ -34,6 +40,8 @@ namespace ValheimRecycle
 
         [HarmonyPostfix]
         [HarmonyPatch("SetupRequirement")]
+        [HarmonyBefore(new string[] { "randyknapp.mods.epicloot" })]
+        [HarmonyPriority(10000)]
         internal static void PostfixSetupRequirement(Transform elementRoot, Piece.Requirement req, int quality)
         {
             // don't flash the resource amount in requirements window if deconstructing
@@ -49,6 +57,11 @@ namespace ValheimRecycle
 
         [HarmonyPrefix]
         [HarmonyPatch("DoCrafting")]
+
+        [HarmonyBefore(new string[] { "randyknapp.mods.epicloot" })]
+        [HarmonyPriority(10000)]
+
+
         internal static bool PrefixDoCrafting(InventoryGui __instance, Player player)
         {
             if (ValheimRecycle.instance.InTabDeconstruct())
@@ -57,42 +70,54 @@ namespace ValheimRecycle
                 {
                     return false;
                 }
-                int num = (__instance.m_craftUpgradeItem != null) ? (__instance.m_craftUpgradeItem.m_quality - 1) : 0;
+                int downgradedQuality = (__instance.m_craftUpgradeItem != null) ? (__instance.m_craftUpgradeItem.m_quality - 1) : 0;
 
                 if (__instance.m_craftUpgradeItem != null && !player.GetInventory().ContainsItem(__instance.m_craftUpgradeItem))
                 {
                     return false;
                 }
-                if (__instance.m_craftUpgradeItem == null && Utils.HaveEmptySlotsForRecipe(player.GetInventory(), __instance.m_craftRecipe, num + 1))
+                if (__instance.m_craftUpgradeItem == null && Utils.HaveEmptySlotsForRecipe(player.GetInventory(), __instance.m_craftRecipe, downgradedQuality + 1))
                 {
                     return false;
                 }
-                int variant = __instance.m_craftVariant;
-                if (__instance.m_craftUpgradeItem != null)
-                {
-                    variant = __instance.m_craftUpgradeItem.m_variant;
-                    player.UnequipItem(__instance.m_craftUpgradeItem, true);
-                    player.GetInventory().RemoveItem(__instance.m_craftUpgradeItem);
-                }
+                int variant = __instance.m_craftUpgradeItem.m_variant;
                 long playerID = player.GetPlayerID();
                 string playerName = player.GetPlayerName();
-                // dont add downgraded item if its quality is 0
-                if (num >= 1)
+                if (__instance.m_craftUpgradeItem != null)
                 {
-                    player.GetInventory().AddItem(__instance.m_craftRecipe.m_item.gameObject.name, __instance.m_craftRecipe.m_amount, num, variant, playerID, playerName);
-                }
-                else
-                {
-                    Debug.Log("Item was destroyed");
+                    Debug.Log("Original Quality: " + __instance.m_craftUpgradeItem.m_quality);
+
+                    Debug.Log("Downgrade Quality: " + downgradedQuality);
+                    if (downgradedQuality >= 1)
+                    {
+                        if (ValheimRecycle.instance.preserveOriginalItem.Value)
+                        {
+                            Debug.Log("Preserving");
+                            __instance.m_craftUpgradeItem.m_quality = downgradedQuality;
+                            Debug.Log("Downgrade Quality: " + downgradedQuality);
+
+                        } else
+                        {
+                            player.UnequipItem(__instance.m_craftUpgradeItem, true);
+                            player.GetInventory().RemoveItem(__instance.m_craftUpgradeItem);
+                            player.GetInventory().AddItem(__instance.m_craftRecipe.m_item.gameObject.name, __instance.m_craftRecipe.m_amount, downgradedQuality, variant, playerID, playerName);
+                        }
+                    } else
+                    {
+                        player.UnequipItem(__instance.m_craftUpgradeItem, true);
+                        player.GetInventory().RemoveItem(__instance.m_craftUpgradeItem);
+                        Debug.Log("Item was destroyed");
+                    }
+
                 }
 
                 Debug.Log("Name:" + __instance.m_craftRecipe.m_item.m_itemData.m_shared.m_name);
                 Debug.Log("Quality Level:" + __instance.m_craftUpgradeItem.m_quality);
 
 
-                Utils.AddResources(player.GetInventory(), __instance.m_craftRecipe.m_resources, num);
+                Utils.AddResources(player.GetInventory(), __instance.m_craftRecipe.m_resources, downgradedQuality);
 
-                __instance.UpdateCraftingPanel(false);
+                __instance.UpdateCraftingPanel(true);
 
 
 
@@ -106,7 +131,7 @@ namespace ValheimRecycle
                     __instance.m_craftItemDoneEffects.Create(player.transform.position, Quaternion.identity, null, 1f);
                 }
                 Game.instance.GetPlayerProfile().m_playerStats.m_crafts++;
-                Gogan.LogEvent("Game", "Crafted", __instance.m_craftRecipe.m_item.m_itemData.m_shared.m_name, (long)num);
+                Gogan.LogEvent("Game", "Crafted", __instance.m_craftRecipe.m_item.m_itemData.m_shared.m_name, (long)downgradedQuality);
                 return false;
             }
             return true;
@@ -114,6 +139,8 @@ namespace ValheimRecycle
 
         [HarmonyPrefix]
         [HarmonyPatch("UpdateCraftingPanel")]
+        [HarmonyBefore(new string[] { "randyknapp.mods.epicloot" })]
+        [HarmonyPriority(10000)]
         internal static bool PrefixUpdateCraftingPanel(InventoryGui __instance, bool focusView = false)
         {
             if (ValheimRecycle.instance != null)
@@ -162,6 +189,8 @@ namespace ValheimRecycle
 
         [HarmonyPostfix]
         [HarmonyPatch("UpdateRecipeList")]
+        [HarmonyBefore(new string[] { "randyknapp.mods.epicloot" })]
+        [HarmonyPriority(10000)]
         internal static void PostfixUpdateRecipeList(InventoryGui __instance, List<Recipe> recipes)
         {
             if (ValheimRecycle.instance.InTabDeconstruct())
@@ -210,6 +239,8 @@ namespace ValheimRecycle
 
         [HarmonyPrefix]
         [HarmonyPatch("UpdateRecipe")]
+        [HarmonyBefore(new string[] { "randyknapp.mods.epicloot" })]
+        [HarmonyPriority(10000)]
         internal static bool PrefixUpdateRecipe(InventoryGui __instance, Player player, float dt)
         {
             if (ValheimRecycle.instance.InTabDeconstruct())

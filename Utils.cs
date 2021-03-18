@@ -22,7 +22,6 @@ namespace ValheimRecycle
 
             foreach (Piece.Requirement req in recipe.m_resources)
             {
-                Debug.Log(ValheimRecycle.instance.resourceMultiplier.Value * req.GetAmount(quality));
                 if (GetModifiedAmount(quality, req) > 0) requiredSlots++;
             }
             if (emptySlots >= requiredSlots) return true;
