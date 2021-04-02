@@ -47,160 +47,65 @@ namespace ValheimRecycle
                 }
             }
         }
-        public class ObjectDumper
+        internal static void DoRecycle(Player player, InventoryGui __instance)
         {
-            private int _level;
-            private readonly int _indentSize;
-            private readonly StringBuilder _stringBuilder;
-            private readonly List<int> _hashListOfFoundElements;
-
-            private ObjectDumper(int indentSize)
+            if (__instance.m_craftRecipe == null)
             {
-                _indentSize = indentSize;
-                _stringBuilder = new StringBuilder();
-                _hashListOfFoundElements = new List<int>();
+                return;
             }
+            int downgradedQuality = (__instance.m_craftUpgradeItem != null) ? (__instance.m_craftUpgradeItem.m_quality - 1) : 0;
 
-            public static string Dump(object element)
+            if (__instance.m_craftUpgradeItem != null && !player.GetInventory().ContainsItem(__instance.m_craftUpgradeItem))
             {
-                return Dump(element, 2);
+                return;
             }
-
-            public static string Dump(object element, int indentSize)
+            if (__instance.m_craftUpgradeItem == null && HaveEmptySlotsForRecipe(player.GetInventory(), __instance.m_craftRecipe, downgradedQuality + 1))
             {
-                var instance = new ObjectDumper(indentSize);
-                return instance.DumpElement(element);
+                return;
             }
-
-            private string DumpElement(object element)
+            int variant = __instance.m_craftUpgradeItem.m_variant;
+            long playerID = player.GetPlayerID();
+            string playerName = player.GetPlayerName();
+            if (__instance.m_craftUpgradeItem != null)
             {
-                if (element == null || element is ValueType || element is string)
+                if (downgradedQuality >= 1)
                 {
-                    Write(FormatValue(element));
-                }
-                else
-                {
-                    var objectType = element.GetType();
-                    if (!typeof(IEnumerable).IsAssignableFrom(objectType))
+                    player.UnequipItem(__instance.m_craftUpgradeItem, true);
+                    if (ValheimRecycle.instance.preserveOriginalItem.Value)
                     {
-                        Write("{{{0}}}", objectType.FullName);
-                        _hashListOfFoundElements.Add(element.GetHashCode());
-                        _level++;
-                    }
-
-                    var enumerableElement = element as IEnumerable;
-                    if (enumerableElement != null)
-                    {
-                        foreach (object item in enumerableElement)
-                        {
-                            if (item is IEnumerable && !(item is string))
-                            {
-                                _level++;
-                                DumpElement(item);
-                                _level--;
-                            }
-                            else
-                            {
-                                if (!AlreadyTouched(item))
-                                    DumpElement(item);
-                                else
-                                    Write("{{{0}}} <-- bidirectional reference found", item.GetType().FullName);
-                            }
-                        }
+                        __instance.m_craftUpgradeItem.m_quality = downgradedQuality;
                     }
                     else
                     {
-                        MemberInfo[] members = element.GetType().GetMembers(BindingFlags.Public | BindingFlags.Instance);
-                        foreach (var memberInfo in members)
-                        {
-                            var fieldInfo = memberInfo as FieldInfo;
-                            var propertyInfo = memberInfo as PropertyInfo;
-
-                            if (fieldInfo == null && propertyInfo == null)
-                                continue;
-
-                            var type = fieldInfo != null ? fieldInfo.FieldType : propertyInfo.PropertyType;
-                            object value = fieldInfo != null
-                                               ? fieldInfo.GetValue(element)
-                                               : propertyInfo.GetValue(element, null);
-
-                            if (type.IsValueType || type == typeof(string))
-                            {
-                                Write("{0}: {1}", memberInfo.Name, FormatValue(value));
-                            }
-                            else
-                            {
-                                var isEnumerable = typeof(IEnumerable).IsAssignableFrom(type);
-                                Write("{0}: {1}", memberInfo.Name, isEnumerable ? "..." : "{ }");
-
-                                var alreadyTouched = !isEnumerable && AlreadyTouched(value);
-                                _level++;
-                                if (!alreadyTouched)
-                                    DumpElement(value);
-                                else
-                                    Write("{{{0}}} <-- bidirectional reference found", value.GetType().FullName);
-                                _level--;
-                            }
-                        }
-                    }
-
-                    if (!typeof(IEnumerable).IsAssignableFrom(objectType))
-                    {
-                        _level--;
+                        player.GetInventory().RemoveItem(__instance.m_craftUpgradeItem);
+                        player.GetInventory().AddItem(__instance.m_craftRecipe.m_item.gameObject.name, __instance.m_craftRecipe.m_amount, downgradedQuality, variant, playerID, playerName);
                     }
                 }
-
-                return _stringBuilder.ToString();
-            }
-
-            private bool AlreadyTouched(object value)
-            {
-                if (value == null)
-                    return false;
-
-                var hash = value.GetHashCode();
-                for (var i = 0; i < _hashListOfFoundElements.Count; i++)
+                else
                 {
-                    if (_hashListOfFoundElements[i] == hash)
-                        return true;
+                    player.UnequipItem(__instance.m_craftUpgradeItem, true);
+                    player.GetInventory().RemoveItem(__instance.m_craftUpgradeItem);
                 }
-                return false;
+
             }
 
-            private void Write(string value, params object[] args)
+            AddResources(player.GetInventory(), __instance.m_craftRecipe.m_resources, downgradedQuality);
+
+            __instance.UpdateCraftingPanel(true);
+
+            CraftingStation currentCraftingStation = Player.m_localPlayer.GetCurrentCraftingStation();
+            if (currentCraftingStation)
             {
-                var space = new string(' ', _level * _indentSize);
-
-                if (args != null)
-                    value = string.Format(value, args);
-
-                _stringBuilder.AppendLine(space + value);
+                currentCraftingStation.m_craftItemDoneEffects.Create(player.transform.position, Quaternion.identity, null, 1f);
             }
-
-            private string FormatValue(object o)
+            else
             {
-                if (o == null)
-                    return ("null");
-
-                if (o is DateTime)
-                    return (((DateTime)o).ToShortDateString());
-
-                if (o is string)
-                    return string.Format("\"{0}\"", o);
-
-                if (o is char && (char)o == '\0')
-                    return string.Empty;
-
-                if (o is ValueType)
-                    return (o.ToString());
-
-                if (o is IEnumerable)
-                    return ("...");
-
-                return ("{ }");
+                __instance.m_craftItemDoneEffects.Create(player.transform.position, Quaternion.identity, null, 1f);
             }
+            Game.instance.GetPlayerProfile().m_playerStats.m_crafts++;
+            Gogan.LogEvent("Game", "Crafted", __instance.m_craftRecipe.m_item.m_itemData.m_shared.m_name, (long)downgradedQuality);
+            Debug.Log("did I return");
         }
+  
     }
-
-
 }
