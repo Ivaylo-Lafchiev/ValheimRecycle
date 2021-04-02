@@ -21,6 +21,7 @@ namespace ValheimRecycle
         #region Config
         internal ConfigEntry<RecycleConfig.TabPositions> tabPosition;
         internal ConfigEntry<float> resourceMultiplier;
+        internal ConfigEntry<bool> preserveOriginalItem;
         #endregion
 
         internal bool InTabDeconstruct()
@@ -33,7 +34,7 @@ namespace ValheimRecycle
             Logger.LogInfo("AWAKE");
             instance = this;
             harmony = Harmony.CreateAndPatchAll(typeof(InventoryGuiPatch));
-
+            
             tabPosition = Config.Bind("General",   
                              "TabPosition",  
                              RecycleConfig.TabPositions.Left,
@@ -43,6 +44,8 @@ namespace ValheimRecycle
                  1f,
                  new ConfigDescription("The amount of resources to return from recycling (0 to 1, where 1 returns 100% of the resources and 0 returns 0%)", new AcceptableValueRange<float>(0,1))
                  );
+            preserveOriginalItem = Config.Bind("General", "PreserveOriginalItem", true, "[EXPERIMENTAL]\nWhether the original item's data should be preserved when downgrading. Useful for mods which add extra properties to items like EpicLoot.\nTurn off if experiencing problems.");
+
         }
         internal void OnDestroy()
         {

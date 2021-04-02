@@ -1,13 +1,10 @@
 using HarmonyLib;
-using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
 namespace ValheimRecycle
 {
-
-
     [HarmonyPatch(typeof(InventoryGui))]
     public class InventoryGuiPatch
     {
@@ -45,71 +42,6 @@ namespace ValheimRecycle
                 component3.text = amount.ToString();
                 component3.color = Color.green;
             }
-        }
-
-        [HarmonyPrefix]
-        [HarmonyPatch("DoCrafting")]
-        internal static bool PrefixDoCrafting(InventoryGui __instance, Player player)
-        {
-            if (ValheimRecycle.instance.InTabDeconstruct())
-            {
-                if (__instance.m_craftRecipe == null)
-                {
-                    return false;
-                }
-                int num = (__instance.m_craftUpgradeItem != null) ? (__instance.m_craftUpgradeItem.m_quality - 1) : 0;
-
-                if (__instance.m_craftUpgradeItem != null && !player.GetInventory().ContainsItem(__instance.m_craftUpgradeItem))
-                {
-                    return false;
-                }
-                if (__instance.m_craftUpgradeItem == null && Utils.HaveEmptySlotsForRecipe(player.GetInventory(), __instance.m_craftRecipe, num + 1))
-                {
-                    return false;
-                }
-                int variant = __instance.m_craftVariant;
-                if (__instance.m_craftUpgradeItem != null)
-                {
-                    variant = __instance.m_craftUpgradeItem.m_variant;
-                    player.UnequipItem(__instance.m_craftUpgradeItem, true);
-                    player.GetInventory().RemoveItem(__instance.m_craftUpgradeItem);
-                }
-                long playerID = player.GetPlayerID();
-                string playerName = player.GetPlayerName();
-                // dont add downgraded item if its quality is 0
-                if (num >= 1)
-                {
-                    player.GetInventory().AddItem(__instance.m_craftRecipe.m_item.gameObject.name, __instance.m_craftRecipe.m_amount, num, variant, playerID, playerName);
-                }
-                else
-                {
-                    Debug.Log("Item was destroyed");
-                }
-
-                Debug.Log("Name:" + __instance.m_craftRecipe.m_item.m_itemData.m_shared.m_name);
-                Debug.Log("Quality Level:" + __instance.m_craftUpgradeItem.m_quality);
-
-
-                Utils.AddResources(player.GetInventory(), __instance.m_craftRecipe.m_resources, num);
-
-                __instance.UpdateCraftingPanel(false);
-
-
-
-                CraftingStation currentCraftingStation = Player.m_localPlayer.GetCurrentCraftingStation();
-                if (currentCraftingStation)
-                {
-                    currentCraftingStation.m_craftItemDoneEffects.Create(player.transform.position, Quaternion.identity, null, 1f);
-                }
-                else
-                {
-                    __instance.m_craftItemDoneEffects.Create(player.transform.position, Quaternion.identity, null, 1f);
-                }
-                Game.instance.GetPlayerProfile().m_playerStats.m_crafts++;
-                Gogan.LogEvent("Game", "Crafted", __instance.m_craftRecipe.m_item.m_itemData.m_shared.m_name, (long)num);
-                return false;
-            }
-            return true;
         }
 
         [HarmonyPrefix]
@@ -166,7 +98,6 @@ namespace ValheimRecycle
         {
             if (ValheimRecycle.instance.InTabDeconstruct())
             {
-                Debug.Log("In deconstruct");
                 Player localPlayer = Player.m_localPlayer;
                 __instance.m_availableRecipes.Clear();
                 foreach (GameObject gameObject in __instance.m_recipeList)
@@ -310,7 +241,6 @@ namespace ValheimRecycle
                     bool flag4 = !requiredStation || (currentCraftingStation && currentCraftingStation.CheckUsable(player, false));
                     __instance.m_craftButton.interactable = (((flag2 && flag4) || player.NoCostCheat()) && flag3 && flag);
                     Text componentInChildren = __instance.m_craftButton.GetComponentInChildren<Text>();
-                    // always called deconstruct
                     componentInChildren.text = "Recycle";
                     UITooltip component = __instance.m_craftButton.GetComponent<UITooltip>();
                     if (!flag3)
@@ -355,7 +285,14 @@ namespace ValheimRecycle
                 __instance.m_craftTimer += dt;
                 if (__instance.m_craftTimer >= __instance.m_craftDuration)
                 {
-                    __instance.DoCrafting(player);
+                    if (ValheimRecycle.instance.InTabDeconstruct())
+                    {
+                        Utils.DoRecycle(player, __instance);
+                    }
+                    else
+                    {
+                        __instance.DoCrafting(player);
+                    }
                     __instance.m_craftTimer = -1f;
                 }
                 return false;

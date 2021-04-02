@@ -10,7 +10,6 @@ namespace ValheimRecycle
 
 		public static bool Prefix(Console __instance)
 		{
-			Debug.Log("IN CONSOLE");
 			string text = __instance.m_input.text;
 
 			if (text.StartsWith("run"))
