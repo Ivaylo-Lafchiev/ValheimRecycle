@@ -51,6 +51,10 @@ namespace ValheimRecycle
             if (ValheimRecycle.instance != null)
             {
                 Player localPlayer = Player.m_localPlayer;
+                if (localPlayer.GetCurrentCraftingStation().gameObject.name.Contains("artisanstation"))
+                {
+                    return true;
+                }
                 if (!localPlayer.GetCurrentCraftingStation() && !localPlayer.NoCostCheat())
                 {
                     __instance.m_tabCraft.interactable = false;
