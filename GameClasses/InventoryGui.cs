@@ -102,8 +102,6 @@ namespace ValheimRecycle
         {
             if (ValheimRecycle.instance.InTabDeconstruct())
             {
-                Debug.Log("testsets");
-
                 Player localPlayer = Player.m_localPlayer;
                 __instance.m_availableRecipes.Clear();
                 foreach (GameObject gameObject in __instance.m_recipeList)
