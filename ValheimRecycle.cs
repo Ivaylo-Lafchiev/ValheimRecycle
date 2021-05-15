@@ -6,7 +6,7 @@ using UnityEngine.UI;
 
 namespace ValheimRecycle
 {
-    [BepInPlugin("org.lafchi.plugins.valheim_recycle", "Valheim Recycle", "1.3.1")]
+    [BepInPlugin("org.lafchi.plugins.valheim_recycle", "Valheim Recycle", "1.3.2")]
     [BepInProcess("valheim.exe")]
     public class ValheimRecycle : BaseUnityPlugin
     {
