@@ -51,8 +51,10 @@ namespace ValheimRecycle
             if (ValheimRecycle.instance != null)
             {
                 Player localPlayer = Player.m_localPlayer;
-                if (localPlayer.GetCurrentCraftingStation().gameObject.name.Contains("artisanstation"))
+                if (localPlayer.GetCurrentCraftingStation() && (localPlayer.GetCurrentCraftingStation().gameObject.name.Contains("cauldron") || localPlayer.GetCurrentCraftingStation().gameObject.name.Contains("artisanstation")))
                 {
+                    ValheimRecycle.instance.recycleObject.SetActive(false);
+                    ValheimRecycle.instance.recycleButton.interactable = true;
                     return true;
                 }
                 if (!localPlayer.GetCurrentCraftingStation() && !localPlayer.NoCostCheat())
@@ -62,19 +64,11 @@ namespace ValheimRecycle
                     __instance.m_tabUpgrade.gameObject.SetActive(false);
                     ValheimRecycle.instance.recycleObject.SetActive(false);
                     ValheimRecycle.instance.recycleButton.interactable = true;
-
                 }
                 else
                 {
                     __instance.m_tabUpgrade.gameObject.SetActive(true);
-                    if (!localPlayer.GetCurrentCraftingStation().gameObject.name.Contains("cauldron"))
-                    {
-                        ValheimRecycle.instance.recycleObject.SetActive(true);
-                    }
-                    else
-                    {
-                        ValheimRecycle.instance.recycleObject.SetActive(false);
-                    }
+                     ValheimRecycle.instance.recycleObject.SetActive(true);
                 }
                 List<Recipe> recipes = new List<Recipe>();
                 localPlayer.GetAvailableRecipes(ref recipes);
