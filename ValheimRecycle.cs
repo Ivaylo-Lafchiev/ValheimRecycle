@@ -6,7 +6,7 @@ using UnityEngine.UI;
 
 namespace ValheimRecycle
 {
-    [BepInPlugin("org.lafchi.plugins.valheim_recycle", "Valheim Recycle", "1.3.3")]
+    [BepInPlugin("org.lafchi.plugins.valheim_recycle", "Valheim Recycle", "2.0.0")]
     [BepInProcess("valheim.exe")]
     public class ValheimRecycle : BaseUnityPlugin
     {
@@ -45,7 +45,7 @@ namespace ValheimRecycle
                  1f,
                  new ConfigDescription("The amount of resources to return from recycling (0 to 1, where 1 returns 100% of the resources and 0 returns 0%)", new AcceptableValueRange<float>(0,1))
                  );
-            preserveOriginalItem = Config.Bind("General", "PreserveOriginalItem", true, "[EXPERIMENTAL]\nWhether the original item's data should be preserved when downgrading. Useful for mods which add extra properties to items like EpicLoot.\nTurn off if experiencing problems.");
+            preserveOriginalItem = Config.Bind("General", "PreserveOriginalItem", true, "Whether the original item's data should be preserved when downgrading. Useful for mods which add extra properties to items like EpicLoot.\nTurn off if experiencing problems.");
             nexusID = Config.Bind<int>("General", "NexusID", 425, "Nexus mod ID for updates");
 
         }
