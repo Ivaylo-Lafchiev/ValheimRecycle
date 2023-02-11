@@ -2,7 +2,6 @@ using HarmonyLib;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
-using static System.Xml.XmlWellFormedWriter.AttributeValueCache;
 
 namespace ValheimRecycle
 {
