@@ -104,7 +104,6 @@ namespace ValheimRecycle
             }
             Game.instance.GetPlayerProfile().m_playerStats.m_crafts++;
             Gogan.LogEvent("Game", "Crafted", __instance.m_craftRecipe.m_item.m_itemData.m_shared.m_name, (long)downgradedQuality);
-            Debug.Log("did I return");
         }
   
     }

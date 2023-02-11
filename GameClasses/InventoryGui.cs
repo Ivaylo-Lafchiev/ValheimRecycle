@@ -2,6 +2,7 @@ using HarmonyLib;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+using static System.Xml.XmlWellFormedWriter.AttributeValueCache;
 
 namespace ValheimRecycle
 {
@@ -104,15 +105,17 @@ namespace ValheimRecycle
                 }
                 __instance.m_recipeList.Clear();
 
-                Debug.Log("Recipe list:\n");
+                //Debug.Log("Recipe list:\n");
 
                 List<KeyValuePair<Recipe, ItemDrop.ItemData>> list = new List<KeyValuePair<Recipe, ItemDrop.ItemData>>();
                 for (int l = 0; l < recipes.Count; l++)
                 {
+                    //Debug.Log(recipes[l].name);
+                    //Debug.Log(recipes[l].m_item.m_itemData.m_shared.m_maxQuality);
 
                     Recipe recipe2 = recipes[l];
 
-                    if (recipe2.m_item.m_itemData.m_shared.m_maxQuality > 1)
+                    if (recipe2.m_item.m_itemData.m_shared.m_maxQuality >= 1)
                     {
                         __instance.m_tempItemList.Clear();
                         localPlayer.GetInventory().GetAllItems(recipe2.m_item.m_itemData.m_shared.m_name, __instance.m_tempItemList);
@@ -127,8 +130,11 @@ namespace ValheimRecycle
                         }
                     }
                 }
+                //Debug.Log("Modified Recipe list:\n");
+
                 foreach (KeyValuePair<Recipe, ItemDrop.ItemData> keyValuePair in list)
                 {
+                    //Debug.Log(keyValuePair.Key);
                     __instance.AddRecipeToList(localPlayer, keyValuePair.Key, keyValuePair.Value, true);
                 }
                 float num = (float)__instance.m_recipeList.Count * __instance.m_recipeListSpace;

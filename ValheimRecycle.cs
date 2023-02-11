@@ -6,7 +6,7 @@ using UnityEngine.UI;
 
 namespace ValheimRecycle
 {
-    [BepInPlugin("org.lafchi.plugins.valheim_recycle", "Valheim Recycle", "2.1.0")]
+    [BepInPlugin("org.lafchi.plugins.valheim_recycle", "Valheim Recycle", "2.3.0")]
     [BepInProcess("valheim.exe")]
     public class ValheimRecycle : BaseUnityPlugin
     {
@@ -69,7 +69,7 @@ namespace ValheimRecycle
             recycleObject = Instantiate(InventoryGui.instance.m_tabUpgrade.gameObject, InventoryGui.instance.m_tabUpgrade.gameObject.transform.parent);
             if (recycleObject is null)
             {
-                Logger.LogError($"SortButton couldn't be instantiated.");
+                Logger.LogError($"RecycletButton couldn't be instantiated.");
                 return null;
             }
             recycleObject.name = "Recycle";
