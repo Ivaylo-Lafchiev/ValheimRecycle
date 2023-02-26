@@ -6,7 +6,7 @@ using UnityEngine.UI;
 
 namespace ValheimRecycle
 {
-    [BepInPlugin("org.lafchi.plugins.valheim_recycle", "Valheim Recycle", "2.3.0")]
+    [BepInPlugin("org.lafchi.plugins.valheim_recycle", "Valheim Recycle", "2.29.0")]
     [BepInProcess("valheim.exe")]
     public class ValheimRecycle : BaseUnityPlugin
     {
@@ -88,7 +88,7 @@ namespace ValheimRecycle
 
         internal void SelectRecycleTab()
         {
-            Logger.LogDebug("Selected recycle");
+            Logger.LogDebug("Selectsed recycle");
             recycleButton.interactable = false;
             InventoryGui.m_instance.m_tabCraft.interactable = true;
             InventoryGui.m_instance.m_tabUpgrade.interactable = true;

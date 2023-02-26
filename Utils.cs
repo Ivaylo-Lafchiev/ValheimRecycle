@@ -77,14 +77,15 @@ namespace ValheimRecycle
                     }
                     else
                     {
-                        player.GetInventory().RemoveItem(__instance.m_craftUpgradeItem);
+                        player.GetInventory().RemoveItem(__instance.m_craftUpgradeItem);                      
                         player.GetInventory().AddItem(__instance.m_craftRecipe.m_item.gameObject.name, __instance.m_craftRecipe.m_amount, downgradedQuality, variant, playerID, playerName);
                     }
                 }
                 else
                 {
                     player.UnequipItem(__instance.m_craftUpgradeItem, true);
-                    player.GetInventory().RemoveItem(__instance.m_craftUpgradeItem);
+                    player.GetInventory().RemoveItem(__instance.m_craftUpgradeItem, __instance.m_craftRecipe.m_amount);
+                    
                 }
 
             }

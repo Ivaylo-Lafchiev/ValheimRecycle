@@ -1,7 +1,9 @@
 using HarmonyLib;
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+using static ItemDrop;
 
 namespace ValheimRecycle
 {
@@ -68,7 +70,7 @@ namespace ValheimRecycle
                 else
                 {
                     __instance.m_tabUpgrade.gameObject.SetActive(true);
-                     ValheimRecycle.instance.recycleObject.SetActive(true);
+                    ValheimRecycle.instance.recycleObject.SetActive(true);
                 }
                 List<Recipe> recipes = new List<Recipe>();
                 localPlayer.GetAvailableRecipes(ref recipes);
@@ -107,17 +109,34 @@ namespace ValheimRecycle
                 //Debug.Log("Recipe list:\n");
 
                 List<KeyValuePair<Recipe, ItemDrop.ItemData>> list = new List<KeyValuePair<Recipe, ItemDrop.ItemData>>();
+
+                List<Recipe> newRecipesList = new List<Recipe>();
+
                 for (int l = 0; l < recipes.Count; l++)
                 {
-                    //Debug.Log(recipes[l].name);
-                    //Debug.Log(recipes[l].m_item.m_itemData.m_shared.m_maxQuality);
-
                     Recipe recipe2 = recipes[l];
+
+                    //  Debug.Log(recipes[l].name);
 
                     if (recipe2.m_item.m_itemData.m_shared.m_maxQuality >= 1)
                     {
                         __instance.m_tempItemList.Clear();
-                        localPlayer.GetInventory().GetAllItems(recipe2.m_item.m_itemData.m_shared.m_name, __instance.m_tempItemList);
+                        if (recipe2.m_item.m_itemData.m_shared.m_maxStackSize == 1)
+                        {
+                            localPlayer.GetInventory().GetAllItems(recipe2.m_item.m_itemData.m_shared.m_name, __instance.m_tempItemList);
+                        }
+                        else
+                        {
+                            for (int i = 0; i < localPlayer.GetInventory().m_inventory.Count; i++)
+                            {
+                                if (localPlayer.GetInventory().m_inventory[i].m_shared.m_name.Equals(recipe2.m_item.m_itemData.m_shared.m_name) &&
+                                   localPlayer.GetInventory().m_inventory[i].m_stack >= recipe2.m_amount)
+                                {
+                                    __instance.m_tempItemList.Add(localPlayer.GetInventory().m_inventory[i]);
+                                    break;
+                                }
+                            }
+                        }
 
                         foreach (ItemDrop.ItemData itemData in __instance.m_tempItemList)
                         {
@@ -125,20 +144,21 @@ namespace ValheimRecycle
                             {
                                 list.Add(new KeyValuePair<Recipe, ItemDrop.ItemData>(recipe2, itemData));
                             }
-
                         }
                     }
                 }
-                //Debug.Log("Modified Recipe list:\n");
 
                 foreach (KeyValuePair<Recipe, ItemDrop.ItemData> keyValuePair in list)
                 {
                     //Debug.Log(keyValuePair.Key);
                     __instance.AddRecipeToList(localPlayer, keyValuePair.Key, keyValuePair.Value, true);
+
                 }
+
                 float num = (float)__instance.m_recipeList.Count * __instance.m_recipeListSpace;
                 num = Mathf.Max(__instance.m_recipeListBaseSize, num);
                 __instance.m_recipeListRoot.SetSizeWithCurrentAnchors((RectTransform.Axis)1, num);
+
             }
         }
 
@@ -202,7 +222,7 @@ namespace ValheimRecycle
                         if (value.m_quality <= 1)
                         {
                             // edit here
-                            __instance.m_itemCraftType.text = "Item will be destroyed";
+                            __instance.m_itemCraftType.text = "Item will be recycled";
                         }
                         else
                         {
@@ -218,7 +238,7 @@ namespace ValheimRecycle
                     __instance.m_variantButton.gameObject.SetActive(__instance.m_selectedRecipe.Key.m_item.m_itemData.m_shared.m_variants > 1 && __instance.m_selectedRecipe.Value == null);
                     // edit here
                     __instance.SetupRequirementList(num + 1, player, flag);
-                    int requiredStationLevel = __instance.m_selectedRecipe.Key.GetRequiredStationLevel(num);
+                    int requiredStationLevel = 0;
                     CraftingStation requiredStation = __instance.m_selectedRecipe.Key.GetRequiredStation(num);
                     if (requiredStation != null && flag)
                     {
