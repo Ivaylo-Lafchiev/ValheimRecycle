@@ -30,7 +30,6 @@ namespace ValheimRecycle
             return true;
         }
 
-
         [HarmonyPostfix]
         [HarmonyPatch("SetupRequirement")]
         internal static void PostfixSetupRequirement(Transform elementRoot, Piece.Requirement req, int quality)
@@ -115,16 +114,15 @@ namespace ValheimRecycle
                 for (int l = 0; l < recipes.Count; l++)
                 {
                     Recipe recipe2 = recipes[l];
-
-                    //  Debug.Log(recipes[l].name);
-
                     if (recipe2.m_item.m_itemData.m_shared.m_maxQuality >= 1)
                     {
                         __instance.m_tempItemList.Clear();
+
                         if (recipe2.m_item.m_itemData.m_shared.m_maxStackSize == 1)
                         {
                             localPlayer.GetInventory().GetAllItems(recipe2.m_item.m_itemData.m_shared.m_name, __instance.m_tempItemList);
                         }
+                        // adding all stackable items from inventory to the list
                         else
                         {
                             for (int i = 0; i < localPlayer.GetInventory().m_inventory.Count; i++)
@@ -132,12 +130,12 @@ namespace ValheimRecycle
                                 if (localPlayer.GetInventory().m_inventory[i].m_shared.m_name.Equals(recipe2.m_item.m_itemData.m_shared.m_name) &&
                                    localPlayer.GetInventory().m_inventory[i].m_stack >= recipe2.m_amount)
                                 {
+
                                     __instance.m_tempItemList.Add(localPlayer.GetInventory().m_inventory[i]);
                                     break;
                                 }
                             }
                         }
-
                         foreach (ItemDrop.ItemData itemData in __instance.m_tempItemList)
                         {
                             if (itemData.m_quality >= 1)
@@ -147,7 +145,6 @@ namespace ValheimRecycle
                         }
                     }
                 }
-
                 foreach (KeyValuePair<Recipe, ItemDrop.ItemData> keyValuePair in list)
                 {
                     //Debug.Log(keyValuePair.Key);
@@ -158,7 +155,6 @@ namespace ValheimRecycle
                 float num = (float)__instance.m_recipeList.Count * __instance.m_recipeListSpace;
                 num = Mathf.Max(__instance.m_recipeListBaseSize, num);
                 __instance.m_recipeListRoot.SetSizeWithCurrentAnchors((RectTransform.Axis)1, num);
-
             }
         }
 
