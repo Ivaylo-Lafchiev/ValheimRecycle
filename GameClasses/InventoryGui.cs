@@ -97,7 +97,7 @@ namespace ValheimRecycle
             if (ValheimRecycle.instance.InTabDeconstruct())
             {
                 Player localPlayer = Player.m_localPlayer;
-                var localPlayerInventory = localPlayer.GetInventory();
+                Inventory localPlayerInventory = localPlayer.GetInventory();
 
                 __instance.m_availableRecipes.Clear();
                 foreach (GameObject gameObject in __instance.m_recipeList)
