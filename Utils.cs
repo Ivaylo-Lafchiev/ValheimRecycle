@@ -1,8 +1,4 @@
 ﻿using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Reflection;
-using System.Text;
 using UnityEngine;
 
 namespace ValheimRecycle
@@ -77,7 +73,7 @@ namespace ValheimRecycle
                     }
                     else
                     {
-                        player.GetInventory().RemoveItem(__instance.m_craftUpgradeItem);                      
+                        player.GetInventory().RemoveItem(__instance.m_craftUpgradeItem);
                         player.GetInventory().AddItem(__instance.m_craftRecipe.m_item.gameObject.name, __instance.m_craftRecipe.m_amount, downgradedQuality, variant, playerID, playerName);
                     }
                 }

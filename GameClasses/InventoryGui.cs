@@ -1,9 +1,7 @@
 using HarmonyLib;
-using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
-using static ItemDrop;
 
 namespace ValheimRecycle
 {
@@ -95,9 +93,12 @@ namespace ValheimRecycle
         [HarmonyPatch("UpdateRecipeList")]
         internal static void PostfixUpdateRecipeList(InventoryGui __instance, List<Recipe> recipes)
         {
+
             if (ValheimRecycle.instance.InTabDeconstruct())
             {
                 Player localPlayer = Player.m_localPlayer;
+                var localPlayerInventory = localPlayer.GetInventory();
+
                 __instance.m_availableRecipes.Clear();
                 foreach (GameObject gameObject in __instance.m_recipeList)
                 {
@@ -107,9 +108,7 @@ namespace ValheimRecycle
 
                 //Debug.Log("Recipe list:\n");
 
-                List<KeyValuePair<Recipe, ItemDrop.ItemData>> list = new List<KeyValuePair<Recipe, ItemDrop.ItemData>>();
-
-                List<Recipe> newRecipesList = new List<Recipe>();
+                List<KeyValuePair<Recipe, ItemDrop.ItemData>> list = new List<KeyValuePair<Recipe, ItemDrop.ItemData>>();               
 
                 for (int l = 0; l < recipes.Count; l++)
                 {
@@ -120,18 +119,18 @@ namespace ValheimRecycle
 
                         if (recipe2.m_item.m_itemData.m_shared.m_maxStackSize == 1)
                         {
-                            localPlayer.GetInventory().GetAllItems(recipe2.m_item.m_itemData.m_shared.m_name, __instance.m_tempItemList);
+                            localPlayerInventory.GetAllItems(recipe2.m_item.m_itemData.m_shared.m_name, __instance.m_tempItemList);
                         }
                         // adding all stackable items from inventory to the list
                         else
                         {
-                            for (int i = 0; i < localPlayer.GetInventory().m_inventory.Count; i++)
+                            for (int i = 0; i < localPlayerInventory.m_inventory.Count; i++)
                             {
-                                if (localPlayer.GetInventory().m_inventory[i].m_shared.m_name.Equals(recipe2.m_item.m_itemData.m_shared.m_name) &&
-                                   localPlayer.GetInventory().m_inventory[i].m_stack >= recipe2.m_amount)
+                                if (localPlayerInventory.m_inventory[i].m_shared.m_name.Equals(recipe2.m_item.m_itemData.m_shared.m_name) &&
+                                   localPlayerInventory.m_inventory[i].m_stack >= recipe2.m_amount)
                                 {
 
-                                    __instance.m_tempItemList.Add(localPlayer.GetInventory().m_inventory[i]);
+                                    __instance.m_tempItemList.Add(localPlayerInventory.m_inventory[i]);
                                     break;
                                 }
                             }
