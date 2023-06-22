@@ -3,6 +3,7 @@ using BepInEx.Configuration;
 using HarmonyLib;
 using UnityEngine;
 using UnityEngine.UI;
+using ValheimRecycle.GameClasses;
 
 namespace ValheimRecycle
 {
@@ -35,6 +36,7 @@ namespace ValheimRecycle
             Logger.LogInfo("AWAKE");
             instance = this;
             harmony = Harmony.CreateAndPatchAll(typeof(InventoryGuiPatch));
+            Harmony.CreateAndPatchAll(typeof(HumanoidPatch));
             
             tabPosition = Config.Bind("General",   
                              "TabPosition",  
