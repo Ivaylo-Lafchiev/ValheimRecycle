@@ -1,5 +1,6 @@
 using HarmonyLib;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -144,6 +145,17 @@ namespace ValheimRecycle
                         }
                     }
                 }
+                
+                // filter out equipped items
+                var equipped = localPlayerInventory.GetEquippedItems().Select(item => item.GetHashCode());
+                list.RemoveAll(m => equipped.Contains(m.Value.GetHashCode()));
+                
+                // filter out hotbar items
+                var hotbarItems = new List<ItemDrop.ItemData>();
+                localPlayerInventory.GetBoundItems(hotbarItems);
+                var hotbarItemsHashes = hotbarItems.Select(item => item.GetHashCode());
+                list.RemoveAll(m => hotbarItemsHashes.Contains(m.Value.GetHashCode()));
+                
                 foreach (KeyValuePair<Recipe, ItemDrop.ItemData> keyValuePair in list)
                 {
                     //Debug.Log(keyValuePair.Key);
