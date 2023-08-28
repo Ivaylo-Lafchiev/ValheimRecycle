@@ -221,7 +221,7 @@ namespace ValheimRecycle
                     }
                     __instance.m_recipeName.text = text;
 
-                    __instance.m_recipeDecription.text = Localization.instance.Localize(ItemDrop.ItemData.GetTooltip(__instance.m_selectedRecipe.Key.m_item.m_itemData, num, true));
+                    __instance.m_recipeDecription.text = Localization.instance.Localize(ItemDrop.ItemData.GetTooltip(__instance.m_selectedRecipe.Key.m_item.m_itemData, num, true, Game.m_worldLevel));
                     if (value != null)
                     {
                         __instance.m_itemCraftType.gameObject.SetActive(true);

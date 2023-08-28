@@ -36,7 +36,6 @@
   <ItemGroup>
     <Compile Include="GameClasses\Humanoid.cs" />
     <Compile Include="RecycleConfig.cs" />
-    <Compile Include="GameClasses\Console.cs" />
     <Compile Include="GameClasses\InventoryGui.cs" />
     <Compile Include="Utils.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
