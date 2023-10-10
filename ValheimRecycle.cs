@@ -1,13 +1,14 @@
 ﻿using BepInEx;
 using BepInEx.Configuration;
 using HarmonyLib;
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 using ValheimRecycle.GameClasses;
 
 namespace ValheimRecycle
 {
-    [BepInPlugin("org.lafchi.plugins.valheim_recycle", "Valheim Recycle", "3.0.0")]
+    [BepInPlugin("org.lafchi.plugins.valheim_recycle", "Valheim Recycle", "3.1.1")]
     [BepInProcess("valheim.exe")]
     public class ValheimRecycle : BaseUnityPlugin
     {
@@ -75,7 +76,7 @@ namespace ValheimRecycle
                 return null;
             }
             recycleObject.name = "Recycle";
-            recycleObject.GetComponentInChildren<Text>().text = "RECYCLE";
+            recycleObject.GetComponentInChildren<TMP_Text>().text = "RECYCLE";
             width = recycleObject.GetComponent<RectTransform>().rect.width;
             craftingPos = new Vector3(recycleObject.transform.localPosition.x + ((width + 10f) * ((int)tabPosition.Value + 1)), recycleObject.transform.localPosition.y, recycleObject.transform.localPosition.z);
             recycleButton = recycleObject.GetComponent<Button>();

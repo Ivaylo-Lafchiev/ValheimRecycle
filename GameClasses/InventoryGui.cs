@@ -1,8 +1,8 @@
 using HarmonyLib;
 using System.Collections.Generic;
 using System.Linq;
+using TMPro;
 using UnityEngine;
-using UnityEngine.UI;
 
 namespace ValheimRecycle
 {
@@ -36,7 +36,7 @@ namespace ValheimRecycle
             // don't flash the resource amount in requirements window if deconstructing
             if (ValheimRecycle.instance.InTabDeconstruct())
             {
-                Text component3 = elementRoot.transform.Find("res_amount").GetComponent<Text>();
+                TMP_Text component3 = elementRoot.transform.Find("res_amount").GetComponent<TMP_Text>();
                 int amount = Utils.GetModifiedAmount(quality, req);
 
                 component3.text = amount.ToString();
@@ -270,7 +270,7 @@ namespace ValheimRecycle
                     bool flag3 = Utils.HaveEmptySlotsForRecipe(player.GetInventory(), __instance.m_selectedRecipe.Key, num + 1);
                     bool flag4 = !requiredStation || (currentCraftingStation && currentCraftingStation.CheckUsable(player, false));
                     __instance.m_craftButton.interactable = (((flag2 && flag4) || player.NoCostCheat()) && flag3 && flag);
-                    Text componentInChildren = __instance.m_craftButton.GetComponentInChildren<Text>();
+                    TMP_Text componentInChildren = __instance.m_craftButton.GetComponentInChildren<TMP_Text>();
                     componentInChildren.text = "Recycle";
                     UITooltip component = __instance.m_craftButton.GetComponent<UITooltip>();
                     if (!flag3)
