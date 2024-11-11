@@ -78,7 +78,7 @@ namespace ValheimRecycle
                     __instance.SetRecipe(-1, focusView);
                     return false;
                 }
-                if (__instance.m_selectedRecipe.Key != null)
+                if (__instance.m_selectedRecipe.Recipe != null)
                 {
                     int selectedRecipeIndex = __instance.GetSelectedRecipeIndex();
                     __instance.SetRecipe(selectedRecipeIndex, focusView);
@@ -100,12 +100,11 @@ namespace ValheimRecycle
                 Player localPlayer = Player.m_localPlayer;
                 Inventory localPlayerInventory = localPlayer.GetInventory();
 
-                __instance.m_availableRecipes.Clear();
-                foreach (GameObject gameObject in __instance.m_recipeList)
+                foreach (InventoryGui.RecipeDataPair recipeDataPair in __instance.m_availableRecipes)
                 {
-                    UnityEngine.Object.Destroy(gameObject);
+                    Object.Destroy(recipeDataPair.InterfaceElement);
                 }
-                __instance.m_recipeList.Clear();
+                __instance.m_availableRecipes.Clear();
 
                 //Debug.Log("Recipe list:\n");
 
@@ -163,7 +162,7 @@ namespace ValheimRecycle
 
                 }
 
-                float num = (float)__instance.m_recipeList.Count * __instance.m_recipeListSpace;
+                float num = (float)__instance.m_availableRecipes.Count * __instance.m_recipeListSpace;
                 num = Mathf.Max(__instance.m_recipeListBaseSize, num);
                 __instance.m_recipeListRoot.SetSizeWithCurrentAnchors((RectTransform.Axis)1, num);
             }
@@ -192,13 +191,13 @@ namespace ValheimRecycle
                     __instance.m_craftingStationIcon.gameObject.SetActive(false);
                     __instance.m_craftingStationLevelRoot.gameObject.SetActive(false);
                 }
-                if (__instance.m_selectedRecipe.Key)
+                if (__instance.m_selectedRecipe.Recipe)
                 {
                     __instance.m_recipeIcon.enabled = true;
                     __instance.m_recipeName.enabled = true;
 
 
-                    ItemDrop.ItemData value = __instance.m_selectedRecipe.Value;
+                    ItemDrop.ItemData value = __instance.m_selectedRecipe.ItemData;
                     // don't show item description if item will be destroyed in process
                     if (value.m_quality == 1)
                     {
@@ -209,19 +208,23 @@ namespace ValheimRecycle
                         __instance.m_recipeDecription.enabled = true;
                     }
                     // edit here
+                    ItemDrop.ItemData itemData = __instance.m_selectedRecipe.ItemData;
                     int num = (value != null) ? (value.m_quality >= 1 ? value.m_quality - 1 : 0) : 1;
-                    bool flag = num <= __instance.m_selectedRecipe.Key.m_item.m_itemData.m_shared.m_maxQuality;
+                    bool flag = num <= __instance.m_selectedRecipe.Recipe.m_item.m_itemData.m_shared.m_maxQuality;
+                    // have requirements always true, as item is already present in inventory
+                    bool flag2 = true;
                     int num2 = (value != null) ? value.m_variant : __instance.m_selectedVariant;
-                    __instance.m_recipeIcon.sprite = __instance.m_selectedRecipe.Key.m_item.m_itemData.m_shared.m_icons[num2];
+                    int num3 = flag2 ? __instance.m_multiCraftAmount : 1;
+                    __instance.m_recipeIcon.sprite = __instance.m_selectedRecipe.Recipe.m_item.m_itemData.m_shared.m_icons[num2];
                     // edit here
-                    string text = Localization.instance.Localize(__instance.m_selectedRecipe.Key.m_item.m_itemData.m_shared.m_name);
-                    if (__instance.m_selectedRecipe.Key.m_amount > 1)
+                    string text = Localization.instance.Localize(__instance.m_selectedRecipe.Recipe.m_item.m_itemData.m_shared.m_name);
+                    if (__instance.m_selectedRecipe.Recipe.m_amount > 1)
                     {
-                        text = text + " x" + __instance.m_selectedRecipe.Key.m_amount;
+                        text = text + " x" + __instance.m_selectedRecipe.Recipe.m_amount;
                     }
                     __instance.m_recipeName.text = text;
 
-                    __instance.m_recipeDecription.text = Localization.instance.Localize(ItemDrop.ItemData.GetTooltip(__instance.m_selectedRecipe.Key.m_item.m_itemData, num, true, Game.m_worldLevel));
+                    __instance.m_recipeDecription.text = Localization.instance.Localize(ItemDrop.ItemData.GetTooltip(__instance.m_selectedRecipe.Recipe.m_item.m_itemData, num, true, Game.m_worldLevel));
                     if (value != null)
                     {
                         __instance.m_itemCraftType.gameObject.SetActive(true);
@@ -242,11 +245,11 @@ namespace ValheimRecycle
                     {
                         __instance.m_itemCraftType.gameObject.SetActive(false);
                     }
-                    __instance.m_variantButton.gameObject.SetActive(__instance.m_selectedRecipe.Key.m_item.m_itemData.m_shared.m_variants > 1 && __instance.m_selectedRecipe.Value == null);
+                    __instance.m_variantButton.gameObject.SetActive(__instance.m_selectedRecipe.Recipe.m_item.m_itemData.m_shared.m_variants > 1 && __instance.m_selectedRecipe.ItemData == null);
                     // edit here
-                    __instance.SetupRequirementList(num + 1, player, flag);
+                    __instance.SetupRequirementList(num + 1, player, flag, num3);
                     int requiredStationLevel = 0;
-                    CraftingStation requiredStation = __instance.m_selectedRecipe.Key.GetRequiredStation(num);
+                    CraftingStation requiredStation = __instance.m_selectedRecipe.Recipe.GetRequiredStation(num);
                     if (requiredStation != null && flag)
                     {
                         __instance.m_minStationLevelIcon.gameObject.SetActive(true);
@@ -264,10 +267,8 @@ namespace ValheimRecycle
                     {
                         __instance.m_minStationLevelIcon.gameObject.SetActive(false);
                     }
-                    // have requirements always true, as item is already present in inventory
-                    bool flag2 = true;
                     // count number of slots required to deconstruct
-                    bool flag3 = Utils.HaveEmptySlotsForRecipe(player.GetInventory(), __instance.m_selectedRecipe.Key, num + 1);
+                    bool flag3 = Utils.HaveEmptySlotsForRecipe(player.GetInventory(), __instance.m_selectedRecipe.Recipe, num + 1);
                     bool flag4 = !requiredStation || (currentCraftingStation && currentCraftingStation.CheckUsable(player, false));
                     __instance.m_craftButton.interactable = (((flag2 && flag4) || player.NoCostCheat()) && flag3 && flag);
                     TMP_Text componentInChildren = __instance.m_craftButton.GetComponentInChildren<TMP_Text>();

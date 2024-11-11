@@ -8,7 +8,7 @@ using ValheimRecycle.GameClasses;
 
 namespace ValheimRecycle
 {
-    [BepInPlugin("org.lafchi.plugins.valheim_recycle", "Valheim Recycle", "3.1.1")]
+    [BepInPlugin("org.lafchi.plugins.valheim_recycle", "Valheim Recycle", "4.0.0")]
     [BepInProcess("valheim.exe")]
     public class ValheimRecycle : BaseUnityPlugin
     {
