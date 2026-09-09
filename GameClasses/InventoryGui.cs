@@ -18,13 +18,16 @@ namespace ValheimRecycle
         [HarmonyPatch("OnTabCraftPressed")]
         internal static bool PrefixOnTabCraftPressed(InventoryGui __instance)
         {
+            ValheimRecycle.IsRecycleTabActive = false;
             ValheimRecycle.instance.recycleButton.interactable = true;
             return true;
         }
+
         [HarmonyPrefix]
         [HarmonyPatch("OnTabUpgradePressed")]
         internal static bool PrefixOnTabUpgradePressed(InventoryGui __instance)
         {
+            ValheimRecycle.IsRecycleTabActive = false;
             ValheimRecycle.instance.recycleButton.interactable = true;
             return true;
         }
@@ -44,50 +47,37 @@ namespace ValheimRecycle
             }
         }
 
-        [HarmonyPrefix]
+        [HarmonyPostfix]
         [HarmonyPatch("UpdateCraftingPanel")]
-        internal static bool PrefixUpdateCraftingPanel(InventoryGui __instance, bool focusView = false)
+        internal static void PostfixUpdateCraftingPanel(InventoryGui __instance, bool focusView)
         {
-            if (ValheimRecycle.instance != null)
+            if (ValheimRecycle.instance == null || ValheimRecycle.instance.recycleObject == null) return;
+
+            Player localPlayer = Player.m_localPlayer;
+            if (localPlayer.GetCurrentCraftingStation() && (localPlayer.GetCurrentCraftingStation().gameObject.name.Contains("cauldron") || localPlayer.GetCurrentCraftingStation().gameObject.name.Contains("artisanstation")))
             {
-                Player localPlayer = Player.m_localPlayer;
-                if (localPlayer.GetCurrentCraftingStation() && (localPlayer.GetCurrentCraftingStation().gameObject.name.Contains("cauldron") || localPlayer.GetCurrentCraftingStation().gameObject.name.Contains("artisanstation")))
+                ValheimRecycle.instance.recycleObject.SetActive(false);
+                ValheimRecycle.instance.recycleButton.interactable = true;
+                if (ValheimRecycle.IsRecycleTabActive)
                 {
-                    ValheimRecycle.instance.recycleObject.SetActive(false);
-                    ValheimRecycle.instance.recycleButton.interactable = true;
-                    return true;
+                    ValheimRecycle.IsRecycleTabActive = false;
                 }
-                if (!localPlayer.GetCurrentCraftingStation() && !localPlayer.NoCostCheat())
-                {
-                    __instance.m_tabCraft.interactable = false;
-                    __instance.m_tabUpgrade.interactable = true;
-                    __instance.m_tabUpgrade.gameObject.SetActive(false);
-                    ValheimRecycle.instance.recycleObject.SetActive(false);
-                    ValheimRecycle.instance.recycleButton.interactable = true;
-                }
-                else
-                {
-                    __instance.m_tabUpgrade.gameObject.SetActive(true);
-                    ValheimRecycle.instance.recycleObject.SetActive(true);
-                }
-                List<Recipe> recipes = new List<Recipe>();
-                localPlayer.GetAvailableRecipes(ref recipes);
-                __instance.UpdateRecipeList(recipes);
-                if (__instance.m_availableRecipes.Count <= 0)
-                {
-                    __instance.SetRecipe(-1, focusView);
-                    return false;
-                }
-                if (__instance.m_selectedRecipe.Recipe != null)
-                {
-                    int selectedRecipeIndex = __instance.GetSelectedRecipeIndex();
-                    __instance.SetRecipe(selectedRecipeIndex, focusView);
-                    return false;
-                }
-                __instance.SetRecipe(0, focusView);
-                return false;
+                return;
             }
-            return true;
+
+            // Sync visibility with upgrade tab
+            ValheimRecycle.instance.recycleObject.SetActive(__instance.m_tabUpgrade.gameObject.activeSelf);
+
+            if (ValheimRecycle.IsRecycleTabActive)
+            {
+                __instance.m_tabUpgrade.interactable = true;
+                __instance.m_tabCraft.interactable = true;
+                ValheimRecycle.instance.recycleButton.interactable = false;
+            }
+            else
+            {
+                ValheimRecycle.instance.recycleButton.interactable = true;
+            }
         }
 
         [HarmonyPostfix]
@@ -106,9 +96,7 @@ namespace ValheimRecycle
                 }
                 __instance.m_availableRecipes.Clear();
 
-                //Debug.Log("Recipe list:\n");
-
-                List<KeyValuePair<Recipe, ItemDrop.ItemData>> list = new List<KeyValuePair<Recipe, ItemDrop.ItemData>>();               
+                List<KeyValuePair<Recipe, ItemDrop.ItemData>> list = new List<KeyValuePair<Recipe, ItemDrop.ItemData>>();
 
                 for (int l = 0; l < recipes.Count; l++)
                 {
@@ -121,7 +109,6 @@ namespace ValheimRecycle
                         {
                             localPlayerInventory.GetAllItems(recipe2.m_item.m_itemData.m_shared.m_name, __instance.m_tempItemList);
                         }
-                        // adding all stackable items from inventory to the list
                         else
                         {
                             for (int i = 0; i < localPlayerInventory.m_inventory.Count; i++)
@@ -129,7 +116,6 @@ namespace ValheimRecycle
                                 if (localPlayerInventory.m_inventory[i].m_shared.m_name.Equals(recipe2.m_item.m_itemData.m_shared.m_name) &&
                                    localPlayerInventory.m_inventory[i].m_stack >= recipe2.m_amount)
                                 {
-
                                     __instance.m_tempItemList.Add(localPlayerInventory.m_inventory[i]);
                                     break;
                                 }
@@ -144,22 +130,35 @@ namespace ValheimRecycle
                         }
                     }
                 }
-                
+
                 // filter out equipped items
                 var equipped = localPlayerInventory.GetEquippedItems().Select(item => item.GetHashCode());
                 list.RemoveAll(m => equipped.Contains(m.Value.GetHashCode()));
-                
+
                 // filter out hotbar items
                 var hotbarItems = new List<ItemDrop.ItemData>();
                 localPlayerInventory.GetBoundItems(hotbarItems);
                 var hotbarItemsHashes = hotbarItems.Select(item => item.GetHashCode());
                 list.RemoveAll(m => hotbarItemsHashes.Contains(m.Value.GetHashCode()));
-                
+
+                CraftingStation currentCraftingStation = localPlayer.GetCurrentCraftingStation();
                 foreach (KeyValuePair<Recipe, ItemDrop.ItemData> keyValuePair in list)
                 {
-                    //Debug.Log(keyValuePair.Key);
-                    __instance.AddRecipeToList(localPlayer, keyValuePair.Key, keyValuePair.Value, true);
-
+                    Recipe recipe = keyValuePair.Key;
+                    ItemDrop.ItemData itemData = keyValuePair.Value;
+                    
+                    int targetQuality = (itemData != null) ? itemData.m_quality : 1;
+                    CraftingStation reqStation = recipe.GetRequiredStation(targetQuality);
+                    int reqLevel = recipe.GetRequiredStationLevel(targetQuality);
+                    
+                    bool hasStation = (reqStation == null) || (currentCraftingStation != null && currentCraftingStation.CheckUsable(localPlayer, false) && currentCraftingStation.GetLevel() >= reqLevel);
+                    
+                    int qualityIndex = (itemData != null) ? (itemData.m_quality >= 1 ? itemData.m_quality - 1 : 0) : 1;
+                    bool hasEmptySlots = Utils.HaveEmptySlotsForRecipe(localPlayerInventory, recipe, qualityIndex + 1);
+                    
+                    bool canRecycle = (hasStation || localPlayer.NoCostCheat()) && hasEmptySlots;
+                    
+                    __instance.AddRecipeToList(localPlayer, recipe, itemData, canRecycle);
                 }
 
                 float num = (float)__instance.m_availableRecipes.Count * __instance.m_recipeListSpace;
@@ -168,168 +167,105 @@ namespace ValheimRecycle
             }
         }
 
-        [HarmonyPrefix]
+        [HarmonyPostfix]
         [HarmonyPatch("UpdateRecipe")]
-        internal static bool PrefixUpdateRecipe(InventoryGui __instance, Player player, float dt)
+        internal static void PostfixUpdateRecipe(InventoryGui __instance, Player player, float dt)
         {
-            if (ValheimRecycle.instance.InTabDeconstruct())
+            if (ValheimRecycle.instance.InTabDeconstruct() && __instance.m_selectedRecipe.Recipe)
             {
-
+                ItemDrop.ItemData value = __instance.m_selectedRecipe.ItemData;
+                int num = (value != null) ? (value.m_quality >= 1 ? value.m_quality - 1 : 0) : 1;
+                bool flag = num <= __instance.m_selectedRecipe.Recipe.m_item.m_itemData.m_shared.m_maxQuality;
+                bool flag3 = Utils.HaveEmptySlotsForRecipe(player.GetInventory(), __instance.m_selectedRecipe.Recipe, num + 1);
                 CraftingStation currentCraftingStation = player.GetCurrentCraftingStation();
-                if (currentCraftingStation)
+                int targetQuality = (value != null) ? value.m_quality : 1;
+                CraftingStation reqStation = __instance.m_selectedRecipe.Recipe.GetRequiredStation(targetQuality);
+                int reqLevel = __instance.m_selectedRecipe.Recipe.GetRequiredStationLevel(targetQuality);
+                bool flag4 = (reqStation == null) || (currentCraftingStation != null && currentCraftingStation.CheckUsable(player, false) && currentCraftingStation.GetLevel() >= reqLevel);
+
+                if (reqStation != null && flag)
                 {
-                    __instance.m_craftingStationName.text = Localization.instance.Localize(currentCraftingStation.m_name);
-                    __instance.m_craftingStationIcon.gameObject.SetActive(true);
-                    __instance.m_craftingStationIcon.sprite = currentCraftingStation.m_icon;
-                    int level = currentCraftingStation.GetLevel();
-                    __instance.m_craftingStationLevel.text = level.ToString();
-                    __instance.m_craftingStationLevelRoot.gameObject.SetActive(true);
+                    __instance.m_minStationLevelIcon.gameObject.SetActive(true);
+                    __instance.m_minStationLevelText.text = reqLevel.ToString();
+                    if (currentCraftingStation == null || currentCraftingStation.GetLevel() < reqLevel)
+                    {
+                        __instance.m_minStationLevelText.color = ((Mathf.Sin(Time.time * 10f) > 0f) ? Color.red : __instance.m_minStationLevelBasecolor);
+                    }
+                    else
+                    {
+                        __instance.m_minStationLevelText.color = __instance.m_minStationLevelBasecolor;
+                    }
                 }
                 else
                 {
-                    __instance.m_craftingStationName.text = Localization.instance.Localize("$hud_crafting");
-                    __instance.m_craftingStationIcon.gameObject.SetActive(false);
-                    __instance.m_craftingStationLevelRoot.gameObject.SetActive(false);
+                    __instance.m_minStationLevelIcon.gameObject.SetActive(false);
                 }
-                if (__instance.m_selectedRecipe.Recipe)
+                // don't show item description if item will be destroyed in process
+                if (value != null && value.m_quality == 1)
                 {
-                    __instance.m_recipeIcon.enabled = true;
-                    __instance.m_recipeName.enabled = true;
+                    __instance.m_recipeDecription.enabled = false;
+                }
 
+                string text = Localization.instance.Localize(__instance.m_selectedRecipe.Recipe.m_item.m_itemData.m_shared.m_name);
+                if (__instance.m_selectedRecipe.Recipe.m_amount > 1)
+                {
+                    text = text + " x" + __instance.m_selectedRecipe.Recipe.m_amount;
+                }
+                __instance.m_recipeName.text = text;
 
-                    ItemDrop.ItemData value = __instance.m_selectedRecipe.ItemData;
-                    // don't show item description if item will be destroyed in process
-                    if (value.m_quality == 1)
+                if (value != null)
+                {
+                    __instance.m_itemCraftType.gameObject.SetActive(true);
+                    if (value.m_quality <= 1)
                     {
-                        __instance.m_recipeDecription.enabled = false;
+                        __instance.m_itemCraftType.text = "Item will be recycled";
                     }
                     else
                     {
-                        __instance.m_recipeDecription.enabled = true;
+                        string text2 = Localization.instance.Localize(value.m_shared.m_name);
+                        __instance.m_itemCraftType.text = "Downgrade " + text2 + " quality to " + (value.m_quality - 1).ToString();
                     }
-                    // edit here
-                    ItemDrop.ItemData itemData = __instance.m_selectedRecipe.ItemData;
-                    int num = (value != null) ? (value.m_quality >= 1 ? value.m_quality - 1 : 0) : 1;
-                    bool flag = num <= __instance.m_selectedRecipe.Recipe.m_item.m_itemData.m_shared.m_maxQuality;
-                    // have requirements always true, as item is already present in inventory
-                    bool flag2 = true;
-                    int num2 = (value != null) ? value.m_variant : __instance.m_selectedVariant;
-                    int num3 = flag2 ? __instance.m_multiCraftAmount : 1;
-                    __instance.m_recipeIcon.sprite = __instance.m_selectedRecipe.Recipe.m_item.m_itemData.m_shared.m_icons[num2];
-                    // edit here
-                    string text = Localization.instance.Localize(__instance.m_selectedRecipe.Recipe.m_item.m_itemData.m_shared.m_name);
-                    if (__instance.m_selectedRecipe.Recipe.m_amount > 1)
-                    {
-                        text = text + " x" + __instance.m_selectedRecipe.Recipe.m_amount;
-                    }
-                    __instance.m_recipeName.text = text;
+                }
 
-                    __instance.m_recipeDecription.text = Localization.instance.Localize(ItemDrop.ItemData.GetTooltip(__instance.m_selectedRecipe.Recipe.m_item.m_itemData, num, true, Game.m_worldLevel));
-                    if (value != null)
+                __instance.SetupRequirementList(num + 1, player, flag, 1);
+
+                __instance.m_craftButton.interactable = ((flag4 || player.NoCostCheat()) && flag3 && flag);
+                TMP_Text componentInChildren = __instance.m_craftButton.GetComponentInChildren<TMP_Text>();
+                componentInChildren.text = "Recycle";
+
+                UITooltip component = __instance.m_craftButton.GetComponent<UITooltip>();
+                if (!flag3)
+                {
+                    component.m_text = Localization.instance.Localize("$inventory_full");
+                }
+                else if (!flag4)
+                {
+                    if (currentCraftingStation != null && currentCraftingStation.CheckUsable(player, false) && currentCraftingStation.GetLevel() < reqLevel)
                     {
-                        __instance.m_itemCraftType.gameObject.SetActive(true);
-                        // edit here
-                        if (value.m_quality <= 1)
-                        {
-                            // edit here
-                            __instance.m_itemCraftType.text = "Item will be recycled";
-                        }
-                        else
-                        {
-                            string text2 = Localization.instance.Localize(value.m_shared.m_name);
-                            //edit here
-                            __instance.m_itemCraftType.text = "Downgrade " + text2 + " quality to " + (value.m_quality - 1).ToString();
-                        }
+                        component.m_text = "Workstation level too low";
                     }
                     else
-                    {
-                        __instance.m_itemCraftType.gameObject.SetActive(false);
-                    }
-                    __instance.m_variantButton.gameObject.SetActive(__instance.m_selectedRecipe.Recipe.m_item.m_itemData.m_shared.m_variants > 1 && __instance.m_selectedRecipe.ItemData == null);
-                    // edit here
-                    __instance.SetupRequirementList(num + 1, player, flag, num3);
-                    int requiredStationLevel = 0;
-                    CraftingStation requiredStation = __instance.m_selectedRecipe.Recipe.GetRequiredStation(num);
-                    if (requiredStation != null && flag)
-                    {
-                        __instance.m_minStationLevelIcon.gameObject.SetActive(true);
-                        __instance.m_minStationLevelText.text = requiredStationLevel.ToString();
-                        if (currentCraftingStation == null || currentCraftingStation.GetLevel() < requiredStationLevel)
-                        {
-                            __instance.m_minStationLevelText.color = ((Mathf.Sin(Time.time * 10f) > 0f) ? Color.red : __instance.m_minStationLevelBasecolor);
-                        }
-                        else
-                        {
-                            __instance.m_minStationLevelText.color = __instance.m_minStationLevelBasecolor;
-                        }
-                    }
-                    else
-                    {
-                        __instance.m_minStationLevelIcon.gameObject.SetActive(false);
-                    }
-                    // count number of slots required to deconstruct
-                    bool flag3 = Utils.HaveEmptySlotsForRecipe(player.GetInventory(), __instance.m_selectedRecipe.Recipe, num + 1);
-                    bool flag4 = !requiredStation || (currentCraftingStation && currentCraftingStation.CheckUsable(player, false));
-                    __instance.m_craftButton.interactable = (((flag2 && flag4) || player.NoCostCheat()) && flag3 && flag);
-                    TMP_Text componentInChildren = __instance.m_craftButton.GetComponentInChildren<TMP_Text>();
-                    componentInChildren.text = "Recycle";
-                    UITooltip component = __instance.m_craftButton.GetComponent<UITooltip>();
-                    if (!flag3)
-                    {
-                        component.m_text = Localization.instance.Localize("$inventory_full");
-                    }
-                    else if (!flag4)
                     {
                         component.m_text = Localization.instance.Localize("$msg_missingstation");
                     }
-                    else
-                    {
-                        component.m_text = "";
-                    }
                 }
                 else
                 {
-                    __instance.m_recipeIcon.enabled = false;
-                    __instance.m_recipeName.enabled = false;
-                    __instance.m_recipeDecription.enabled = false;
-                    __instance.m_qualityPanel.gameObject.SetActive(false);
-                    __instance.m_minStationLevelIcon.gameObject.SetActive(false);
-                    __instance.m_craftButton.GetComponent<UITooltip>().m_text = "";
-                    __instance.m_variantButton.gameObject.SetActive(false);
-                    __instance.m_itemCraftType.gameObject.SetActive(false);
-                    for (int i = 0; i < __instance.m_recipeRequirementList.Length; i++)
-                    {
-                        InventoryGui.HideRequirement(__instance.m_recipeRequirementList[i].transform);
-                    }
-                    __instance.m_craftButton.interactable = false;
+                    component.m_text = "";
                 }
-                if (__instance.m_craftTimer < 0f)
-                {
-                    __instance.m_craftProgressPanel.gameObject.SetActive(false);
-                    __instance.m_craftButton.gameObject.SetActive(true);
-                    return false;
-                }
-                __instance.m_craftButton.gameObject.SetActive(false);
-                __instance.m_craftProgressPanel.gameObject.SetActive(true);
-                __instance.m_craftProgressBar.SetMaxValue(__instance.m_craftDuration);
-                __instance.m_craftProgressBar.SetValue(__instance.m_craftTimer);
-                __instance.m_craftTimer += dt;
-                if (__instance.m_craftTimer >= __instance.m_craftDuration)
-                {
-                    if (ValheimRecycle.instance.InTabDeconstruct())
-                    {
-                        Utils.DoRecycle(player, __instance);
-                    }
-                    else
-                    {
-                        __instance.DoCrafting(player);
-                    }
-                    __instance.m_craftTimer = -1f;
-                }
-                return false;
+            }
+        }
+
+        [HarmonyPrefix]
+        [HarmonyPatch("DoCrafting")]
+        internal static bool PrefixDoCrafting(InventoryGui __instance, Player player)
+        {
+            if (ValheimRecycle.instance.InTabDeconstruct())
+            {
+                Utils.DoRecycle(player, __instance);
+                return false; // Prevent original crafting logic and use our own
             }
             return true;
         }
     }
-
 }

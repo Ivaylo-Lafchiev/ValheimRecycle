@@ -8,7 +8,7 @@ using ValheimRecycle.GameClasses;
 
 namespace ValheimRecycle
 {
-    [BepInPlugin("org.lafchi.plugins.valheim_recycle", "Valheim Recycle", "5.0.0")]
+    [BepInPlugin("org.lafchi.plugins.valheim_recycle", "Valheim Recycle", "5.0.1")]
     [BepInProcess("valheim.exe")]
     public class ValheimRecycle : BaseUnityPlugin
     {
@@ -27,14 +27,16 @@ namespace ValheimRecycle
         internal ConfigEntry<int> nexusID;
         #endregion
 
+        internal static bool IsRecycleTabActive = false;
+
         internal bool InTabDeconstruct()
         {
-            return !recycleButton.interactable;
+            return IsRecycleTabActive;
         }
 
         internal void Awake()
         {
-            Logger.LogInfo("AWAKE");
+            Logger.LogInfo("AWAKE - ValheimRecycle 5.0.1 (Safe Patches Active)");
             instance = this;
             harmony = new Harmony("org.lafchi.plugins.valheim_recycle");
             harmony.PatchAll();
@@ -92,6 +94,7 @@ namespace ValheimRecycle
         internal void SelectRecycleTab()
         {
             Logger.LogDebug("Selected recycle");
+            IsRecycleTabActive = true;
             recycleButton.interactable = false;
             InventoryGui.m_instance.m_tabCraft.interactable = true;
             InventoryGui.m_instance.m_tabUpgrade.interactable = true;
