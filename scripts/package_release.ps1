@@ -3,6 +3,9 @@
 
 $ErrorActionPreference = "Stop"
 
+$ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
+Set-Location -Path "$ScriptDir\.."
+
 $PluginFile = "ValheimRecycle.cs"
 $Regex = '\[BepInPlugin\(".*?",\s*".*?",\s*"(.*?)"\)\]'
 
@@ -43,9 +46,6 @@ New-Item -ItemType Directory -Path $TempDir | Out-Null
 
 # Copy files to temp directory
 Copy-Item "bin\Release\ValheimRecycle.dll" -Destination $TempDir
-if (Test-Path "README.md") {
-    Copy-Item "README.md" -Destination $TempDir
-}
 
 # Compress
 Compress-Archive -Path "$TempDir\*" -DestinationPath $ZipPath -Force

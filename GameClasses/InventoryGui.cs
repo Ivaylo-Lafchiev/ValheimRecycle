@@ -36,6 +36,12 @@ namespace ValheimRecycle
         [HarmonyPatch("SetupRequirement")]
         internal static void PostfixSetupRequirement(Transform elementRoot, Piece.Requirement req, int quality)
         {
+            // Heal any UI slots that were permanently disabled by previous experimental code
+            if (!elementRoot.gameObject.activeSelf)
+            {
+                elementRoot.gameObject.SetActive(true);
+            }
+
             // don't flash the resource amount in requirements window if deconstructing
             if (ValheimRecycle.instance.InTabDeconstruct())
             {
@@ -84,7 +90,6 @@ namespace ValheimRecycle
         [HarmonyPatch("UpdateRecipeList")]
         internal static void PostfixUpdateRecipeList(InventoryGui __instance, List<Recipe> recipes)
         {
-
             if (ValheimRecycle.instance.InTabDeconstruct())
             {
                 Player localPlayer = Player.m_localPlayer;
@@ -159,6 +164,16 @@ namespace ValheimRecycle
                     bool canRecycle = (hasStation || localPlayer.NoCostCheat()) && hasEmptySlots;
                     
                     __instance.AddRecipeToList(localPlayer, recipe, itemData, canRecycle);
+                    
+                    if (itemData != null && __instance.m_availableRecipes.Count > 0)
+                    {
+                        var addedPair = __instance.m_availableRecipes[__instance.m_availableRecipes.Count - 1];
+                        UnityEngine.UI.Image icon = addedPair.InterfaceElement.transform.Find("icon").GetComponent<UnityEngine.UI.Image>();
+                        if (icon != null)
+                        {
+                            icon.sprite = itemData.GetIcon();
+                        }
+                    }
                 }
 
                 float num = (float)__instance.m_availableRecipes.Count * __instance.m_recipeListSpace;
@@ -227,11 +242,38 @@ namespace ValheimRecycle
                     }
                 }
 
+                // Temporarily filter the recipe's resources so Valheim natively builds the UI without gaps
+                Recipe recipe = __instance.m_selectedRecipe.Recipe;
+                Piece.Requirement[] originalResources = recipe.m_resources;
+                
+                System.Collections.Generic.List<Piece.Requirement> filtered = new System.Collections.Generic.List<Piece.Requirement>();
+                bool foundFirst = false;
+                foreach(var r in originalResources)
+                {
+                    if (!r.m_recover) continue;
+                    if (recipe.m_requireOnlyOneIngredient && foundFirst) continue;
+                    
+                    filtered.Add(r);
+                    foundFirst = true;
+                }
+                
+                recipe.m_resources = filtered.ToArray();
+
+                // we need to run SetupRequirementList again with the downgraded quality
                 __instance.SetupRequirementList(num + 1, player, flag, 1);
+
+                // Restore original resources
+                recipe.m_resources = originalResources;
 
                 __instance.m_craftButton.interactable = ((flag4 || player.NoCostCheat()) && flag3 && flag);
                 TMP_Text componentInChildren = __instance.m_craftButton.GetComponentInChildren<TMP_Text>();
                 componentInChildren.text = "Recycle";
+
+                TMP_Text progressText = __instance.m_craftProgressPanel.GetComponentInChildren<TMP_Text>();
+                if (progressText != null)
+                {
+                    progressText.text = "Recycling...";
+                }
 
                 UITooltip component = __instance.m_craftButton.GetComponent<UITooltip>();
                 if (!flag3)
@@ -252,6 +294,14 @@ namespace ValheimRecycle
                 else
                 {
                     component.m_text = "";
+                }
+            }
+            else if (__instance.m_craftProgressPanel != null)
+            {
+                TMP_Text progressText = __instance.m_craftProgressPanel.GetComponentInChildren<TMP_Text>();
+                if (progressText != null && progressText.text == "Recycling...")
+                {
+                    progressText.text = Localization.instance.Localize("$inventory_crafting");
                 }
             }
         }

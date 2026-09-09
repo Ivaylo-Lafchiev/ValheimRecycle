@@ -18,18 +18,21 @@ namespace ValheimRecycle
 
             foreach (Piece.Requirement req in recipe.m_resources)
             {
-                if (GetModifiedAmount(quality, req) > 0) requiredSlots++;
+                if (req.m_recover && GetModifiedAmount(quality, req) > 0)
+                {
+                    requiredSlots++;
+                    if (recipe.m_requireOnlyOneIngredient) break;
+                }
             }
             if (emptySlots >= requiredSlots) return true;
             return false;
         }
 
-        public static void AddResources(Inventory inventory, Piece.Requirement[] requirements, int qualityLevel)
+        public static void AddResources(Inventory inventory, Recipe recipe, int qualityLevel)
         {
-
-            foreach (Piece.Requirement requirement in requirements)
+            foreach (Piece.Requirement requirement in recipe.m_resources)
             {
-                if (requirement.m_resItem)
+                if (requirement.m_resItem && requirement.m_recover)
                 {
 
                     int amount = GetModifiedAmount(qualityLevel + 1, requirement);
@@ -40,6 +43,7 @@ namespace ValheimRecycle
 
                         inventory.AddItem(requirement.m_resItem.name, amount, requirement.m_resItem.m_itemData.m_quality, requirement.m_resItem.m_itemData.m_variant, 0L, "", false);
                     }
+                    if (recipe.m_requireOnlyOneIngredient) break;
                 }
             }
         }
@@ -86,7 +90,7 @@ namespace ValheimRecycle
 
             }
 
-            AddResources(player.GetInventory(), __instance.m_craftRecipe.m_resources, downgradedQuality);
+            AddResources(player.GetInventory(), __instance.m_craftRecipe, downgradedQuality);
 
             __instance.UpdateCraftingPanel(true);
 

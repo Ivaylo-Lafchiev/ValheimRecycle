@@ -29,11 +29,17 @@ This project is configured for rapid development using `BepInEx.ScriptEngine`.
 
 ### 2. Publicized Assemblies
 Valheim modding often requires accessing private fields/methods. 
-- Use the `update_publicized_assemblies.ps1` script to automate stripping `private` modifiers from the game's `.dll`s using `AssemblyPublicizer.Cli`.
+- Use the `scripts\update_publicized_assemblies.ps1` script to automate stripping `private` modifiers from the game's `.dll`s using `AssemblyPublicizer.Cli`.
 - This ensures the project compiles cleanly without requiring extensive use of Harmony reflection.
 
 ### 3. NexusMods Releases
 To prepare the mod for release to NexusMods:
 1. Bump the version in `[BepInPlugin("...", "...", "X.X.X")]` within `ValheimRecycle.cs`.
-2. Run `.\package_release.ps1`.
+2. Run `.\scripts\package_release.ps1`.
 3. The script will compile the mod in `Release` mode and generate a `.zip` archive (containing the `.dll` and `README.md`) in the `Releases\` folder, ready for upload.
+
+### 4. Fetching Game Source Code (Decompiling)
+When you need to reference Valheim's internal source code:
+- **NEVER** dump or save decompiled `.cs` files into the mod's workspace root or source directories. This clutters the repository.
+- **INSTEAD**, run the `scripts\update_publicized_assemblies.ps1` script. This will use `ilspycmd` to decompile the core game assemblies directly into `C:\Program Files (x86)\Steam\steamapps\common\Valheim\DecompiledSource`.
+- You can then use your search and view tools directly on that Valheim installation directory to read the source code without polluting the mod's workspace or the AI's temporary scratch space.

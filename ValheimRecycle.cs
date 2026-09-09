@@ -8,7 +8,7 @@ using ValheimRecycle.GameClasses;
 
 namespace ValheimRecycle
 {
-    [BepInPlugin("org.lafchi.plugins.valheim_recycle", "Valheim Recycle", "5.0.1")]
+    [BepInPlugin("org.lafchi.plugins.valheim_recycle", "Valheim Recycle", "5.0.2")]
     [BepInProcess("valheim.exe")]
     public class ValheimRecycle : BaseUnityPlugin
     {
@@ -36,7 +36,7 @@ namespace ValheimRecycle
 
         internal void Awake()
         {
-            Logger.LogInfo("AWAKE - ValheimRecycle 5.0.1 (Safe Patches Active)");
+            Logger.LogInfo("AWAKE - ValheimRecycle 5.0.2 (Safe Patches Active)");
             instance = this;
             harmony = new Harmony("org.lafchi.plugins.valheim_recycle");
             harmony.PatchAll();
@@ -71,7 +71,7 @@ namespace ValheimRecycle
             }
             Logger.LogInfo("CreateRecycleButton");
 
-            recycleObject = Instantiate(InventoryGui.instance.m_tabUpgrade.gameObject, InventoryGui.instance.m_tabUpgrade.gameObject.transform.parent);
+            recycleObject = Instantiate(InventoryGui.instance.m_tabUpgrade.gameObject, InventoryGui.instance.m_tabUpgrade.gameObject.transform.parent, false);
             if (recycleObject is null)
             {
                 Logger.LogError($"RecycletButton couldn't be instantiated.");
@@ -80,7 +80,23 @@ namespace ValheimRecycle
             recycleObject.name = "Recycle";
             recycleObject.GetComponentInChildren<TMP_Text>().text = "RECYCLE";
             width = recycleObject.GetComponent<RectTransform>().rect.width;
-            craftingPos = new Vector3(recycleObject.transform.localPosition.x + ((width + 10f) * ((int)tabPosition.Value + 1)), recycleObject.transform.localPosition.y, recycleObject.transform.localPosition.z);
+
+            // Dynamically find the right-most tab to avoid overlapping with other mods
+            float maxX = InventoryGui.instance.m_tabUpgrade.transform.localPosition.x;
+            foreach (Transform child in InventoryGui.instance.m_tabUpgrade.transform.parent)
+            {
+                if (child == recycleObject.transform) continue;
+                if (child.gameObject.activeSelf && child.GetComponent<Button>() != null)
+                {
+                    maxX = Mathf.Max(maxX, child.localPosition.x);
+                }
+            }
+            
+            // Add any manual offset the user configured via TabPosition (Left=0, Middle=1, Right=2)
+            // Left (0) means place it immediately next to the right-most tab
+            float userOffset = ((int)tabPosition.Value) * (width + 10f);
+
+            craftingPos = new Vector3(maxX + width + 10f + userOffset, InventoryGui.instance.m_tabUpgrade.transform.localPosition.y, InventoryGui.instance.m_tabUpgrade.transform.localPosition.z);
             recycleButton = recycleObject.GetComponent<Button>();
             recycleButton.transform.localPosition = craftingPos;
             recycleButton.interactable = true;
