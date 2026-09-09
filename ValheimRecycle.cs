@@ -1,4 +1,4 @@
-﻿using BepInEx;
+using BepInEx;
 using BepInEx.Configuration;
 using HarmonyLib;
 using TMPro;
@@ -8,7 +8,7 @@ using ValheimRecycle.GameClasses;
 
 namespace ValheimRecycle
 {
-    [BepInPlugin("org.lafchi.plugins.valheim_recycle", "Valheim Recycle", "4.0.0")]
+    [BepInPlugin("org.lafchi.plugins.valheim_recycle", "Valheim Recycle", "5.0.0")]
     [BepInProcess("valheim.exe")]
     public class ValheimRecycle : BaseUnityPlugin
     {
@@ -36,8 +36,8 @@ namespace ValheimRecycle
         {
             Logger.LogInfo("AWAKE");
             instance = this;
-            harmony = Harmony.CreateAndPatchAll(typeof(InventoryGuiPatch));
-            Harmony.CreateAndPatchAll(typeof(HumanoidPatch));
+            harmony = new Harmony("org.lafchi.plugins.valheim_recycle");
+            harmony.PatchAll();
             
             tabPosition = Config.Bind("General",   
                              "TabPosition",  

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using UnityEngine;
 
 namespace ValheimRecycle
@@ -38,7 +38,7 @@ namespace ValheimRecycle
                         Debug.Log("Adding item: " + requirement.m_resItem.name);
                         Debug.Log("Amount: " + requirement.GetAmount(qualityLevel + 1));
 
-                        inventory.AddItem(requirement.m_resItem.name, amount, requirement.m_resItem.m_itemData.m_quality, requirement.m_resItem.m_itemData.m_variant, 0L, "");
+                        inventory.AddItem(requirement.m_resItem.name, amount, requirement.m_resItem.m_itemData.m_quality, requirement.m_resItem.m_itemData.m_variant, 0L, "", false);
                     }
                 }
             }
@@ -74,7 +74,7 @@ namespace ValheimRecycle
                     else
                     {
                         player.GetInventory().RemoveItem(__instance.m_craftUpgradeItem);
-                        player.GetInventory().AddItem(__instance.m_craftRecipe.m_item.gameObject.name, __instance.m_craftRecipe.m_amount, downgradedQuality, variant, playerID, playerName);
+                        player.GetInventory().AddItem(__instance.m_craftRecipe.m_item.gameObject.name, __instance.m_craftRecipe.m_amount, downgradedQuality, variant, playerID, playerName, false);
                     }
                 }
                 else
