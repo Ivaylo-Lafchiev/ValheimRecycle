@@ -136,15 +136,19 @@ namespace ValheimRecycle
                     }
                 }
 
-                // filter out equipped items
-                var equipped = localPlayerInventory.GetEquippedItems().Select(item => item.GetHashCode());
-                list.RemoveAll(m => equipped.Contains(m.Value.GetHashCode()));
-
-                // filter out hotbar items
+                // get equipped and hotbar hashes
+                var equipped = localPlayerInventory.GetEquippedItems().Select(item => item.GetHashCode()).ToList();
                 var hotbarItems = new List<ItemDrop.ItemData>();
                 localPlayerInventory.GetBoundItems(hotbarItems);
-                var hotbarItemsHashes = hotbarItems.Select(item => item.GetHashCode());
-                list.RemoveAll(m => hotbarItemsHashes.Contains(m.Value.GetHashCode()));
+                var hotbarItemsHashes = hotbarItems.Select(item => item.GetHashCode()).ToList();
+
+                // sort the list so equipped and hotbar items are at the bottom
+                list.Sort((a, b) =>
+                {
+                    bool aIsEquipped = equipped.Contains(a.Value.GetHashCode()) || hotbarItemsHashes.Contains(a.Value.GetHashCode());
+                    bool bIsEquipped = equipped.Contains(b.Value.GetHashCode()) || hotbarItemsHashes.Contains(b.Value.GetHashCode());
+                    return aIsEquipped.CompareTo(bIsEquipped);
+                });
 
                 CraftingStation currentCraftingStation = localPlayer.GetCurrentCraftingStation();
                 foreach (KeyValuePair<Recipe, ItemDrop.ItemData> keyValuePair in list)
@@ -161,6 +165,7 @@ namespace ValheimRecycle
                     int qualityIndex = (itemData != null) ? (itemData.m_quality >= 1 ? itemData.m_quality - 1 : 0) : 1;
                     bool hasEmptySlots = Utils.HaveEmptySlotsForRecipe(localPlayerInventory, recipe, qualityIndex + 1);
                     
+                    bool isEquippedOrHotbar = equipped.Contains(itemData.GetHashCode()) || hotbarItemsHashes.Contains(itemData.GetHashCode());
                     bool canRecycle = (hasStation || localPlayer.NoCostCheat()) && hasEmptySlots;
                     
                     __instance.AddRecipeToList(localPlayer, recipe, itemData, canRecycle);
@@ -172,6 +177,22 @@ namespace ValheimRecycle
                         if (icon != null)
                         {
                             icon.sprite = itemData.GetIcon();
+                        }
+
+                        if (isEquippedOrHotbar)
+                        {
+                            TMPro.TMP_Text nameText = addedPair.InterfaceElement.transform.Find("name").GetComponent<TMPro.TMP_Text>();
+                            if (nameText != null)
+                            {
+                                if (equipped.Contains(itemData.GetHashCode()))
+                                {
+                                    nameText.text += " <color=yellow>(Equipped)</color>";
+                                }
+                                else
+                                {
+                                    nameText.text += " <color=yellow>(Hotbar)</color>";
+                                }
+                            }
                         }
                     }
                 }
@@ -304,6 +325,45 @@ namespace ValheimRecycle
                     progressText.text = Localization.instance.Localize("$inventory_crafting");
                 }
             }
+        }
+
+        internal static bool skipPopup = false;
+
+        [HarmonyPrefix]
+        [HarmonyPatch("OnCraftPressed")]
+        internal static bool PrefixOnCraftPressed(InventoryGui __instance)
+        {
+            if (ValheimRecycle.instance.InTabDeconstruct() && !skipPopup)
+            {
+                if (__instance.m_selectedRecipe.Recipe == null || __instance.m_selectedRecipe.ItemData == null) return true;
+                
+                Player player = Player.m_localPlayer;
+                ItemDrop.ItemData itemData = __instance.m_selectedRecipe.ItemData;
+                var equipped = player.GetInventory().GetEquippedItems().Select(item => item.GetHashCode()).ToList();
+                var hotbarItems = new List<ItemDrop.ItemData>();
+                player.GetInventory().GetBoundItems(hotbarItems);
+                var hotbarHashes = hotbarItems.Select(item => item.GetHashCode()).ToList();
+                
+                bool isEquippedOrHotbar = equipped.Contains(itemData.GetHashCode()) || hotbarHashes.Contains(itemData.GetHashCode());
+
+                if (isEquippedOrHotbar)
+                {
+                    UnifiedPopup.Push(new YesNoPopup(
+                        "Recycle Item",
+                        "This item is currently equipped or in your hotbar.\nAre you sure you want to recycle it?",
+                        () => { 
+                            skipPopup = true;
+                            __instance.m_craftButton.onClick.Invoke();
+                            skipPopup = false;
+                            UnifiedPopup.Pop(); 
+                        },
+                        () => { UnifiedPopup.Pop(); },
+                        false
+                    ));
+                    return false; // Stop original OnCraftPressed
+                }
+            }
+            return true;
         }
 
         [HarmonyPrefix]
