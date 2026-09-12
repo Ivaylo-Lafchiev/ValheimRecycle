@@ -63,6 +63,7 @@ namespace ValheimRecycle
             if (localPlayer.GetCurrentCraftingStation() && (localPlayer.GetCurrentCraftingStation().gameObject.name.Contains("cauldron") || localPlayer.GetCurrentCraftingStation().gameObject.name.Contains("artisanstation")))
             {
                 ValheimRecycle.instance.recycleObject.SetActive(false);
+                if (ValheimRecycle.instance.toggleEquippedObject != null) ValheimRecycle.instance.toggleEquippedObject.SetActive(false);
                 ValheimRecycle.instance.recycleButton.interactable = true;
                 if (ValheimRecycle.IsRecycleTabActive)
                 {
@@ -79,10 +80,12 @@ namespace ValheimRecycle
                 __instance.m_tabUpgrade.interactable = true;
                 __instance.m_tabCraft.interactable = true;
                 ValheimRecycle.instance.recycleButton.interactable = false;
+                if (ValheimRecycle.instance.toggleEquippedObject != null) ValheimRecycle.instance.toggleEquippedObject.SetActive(true);
             }
             else
             {
                 ValheimRecycle.instance.recycleButton.interactable = true;
+                if (ValheimRecycle.instance.toggleEquippedObject != null) ValheimRecycle.instance.toggleEquippedObject.SetActive(false);
             }
         }
 
@@ -141,6 +144,11 @@ namespace ValheimRecycle
                 var hotbarItems = new List<ItemDrop.ItemData>();
                 localPlayerInventory.GetBoundItems(hotbarItems);
                 var hotbarItemsHashes = hotbarItems.Select(item => item.GetHashCode()).ToList();
+
+                if (!ValheimRecycle.instance.showEquippedAndHotbar.Value)
+                {
+                    list.RemoveAll(x => equipped.Contains(x.Value.GetHashCode()) || hotbarItemsHashes.Contains(x.Value.GetHashCode()));
+                }
 
                 // sort the list so equipped and hotbar items are at the bottom
                 list.Sort((a, b) =>

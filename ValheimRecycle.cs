@@ -8,7 +8,7 @@ using ValheimRecycle.GameClasses;
 
 namespace ValheimRecycle
 {
-    [BepInPlugin("org.lafchi.plugins.valheim_recycle", "Valheim Recycle", "5.0.3")]
+    [BepInPlugin("org.lafchi.plugins.valheim_recycle", "Valheim Recycle", "5.0.4")]
     [BepInProcess("valheim.exe")]
     public class ValheimRecycle : BaseUnityPlugin
     {
@@ -16,6 +16,8 @@ namespace ValheimRecycle
         internal static ValheimRecycle instance;
         internal GameObject recycleObject;
         internal Button recycleButton;
+        internal GameObject toggleEquippedObject;
+        internal Button toggleEquippedButton;
         internal float width;
         Vector3 craftingPos;
         Harmony harmony;
@@ -25,6 +27,7 @@ namespace ValheimRecycle
         internal ConfigEntry<float> resourceMultiplier;
         internal ConfigEntry<bool> preserveOriginalItem;
         internal ConfigEntry<int> nexusID;
+        internal ConfigEntry<bool> showEquippedAndHotbar;
         #endregion
 
         internal static bool IsRecycleTabActive = false;
@@ -36,7 +39,7 @@ namespace ValheimRecycle
 
         internal void Awake()
         {
-            Logger.LogInfo("AWAKE - ValheimRecycle 5.0.3 (Safe Patches Active)");
+            Logger.LogInfo("AWAKE - ValheimRecycle 5.0.4");
             instance = this;
             harmony = new Harmony("org.lafchi.plugins.valheim_recycle");
             harmony.PatchAll();
@@ -52,6 +55,7 @@ namespace ValheimRecycle
                  );
             preserveOriginalItem = Config.Bind("General", "PreserveOriginalItem", true, "Whether the original item's data should be preserved when downgrading. Useful for mods which add extra properties to items like EpicLoot.\nTurn off if experiencing problems.");
             nexusID = Config.Bind<int>("General", "NexusID", 425, "Nexus mod ID for updates");
+            showEquippedAndHotbar = Config.Bind("General", "ShowEquippedAndHotbar", true, "Whether to show equipped and hotbar items in the recycle list.");
 
         }
         internal void OnDestroy()
@@ -98,12 +102,31 @@ namespace ValheimRecycle
 
             craftingPos = new Vector3(maxX + width + 10f + userOffset, InventoryGui.instance.m_tabUpgrade.transform.localPosition.y, InventoryGui.instance.m_tabUpgrade.transform.localPosition.z);
             recycleButton = recycleObject.GetComponent<Button>();
+            recycleButton.onClick = new Button.ButtonClickedEvent();
+            recycleButton.onClick.AddListener(SelectRecycleTab);
             recycleButton.transform.localPosition = craftingPos;
             recycleButton.interactable = true;
             recycleButton.name = "RecycleButton";
-            recycleButton.onClick.RemoveAllListeners();
-            recycleButton.onClick.AddListener(SelectRecycleTab);
             recycleObject.SetActive(false);
+
+            if (toggleEquippedObject == null)
+            {
+                toggleEquippedObject = Instantiate(recycleObject, InventoryGui.instance.m_craftButton.transform.parent, false);
+                toggleEquippedObject.name = "ToggleEquipped";
+                toggleEquippedButton = toggleEquippedObject.GetComponent<Button>();
+                
+                toggleEquippedButton.onClick = new Button.ButtonClickedEvent();
+                toggleEquippedButton.onClick.AddListener(ToggleEquipped);
+                
+                toggleEquippedObject.transform.localPosition = new Vector3(140, -45, 0);
+                
+                var rect = toggleEquippedObject.GetComponent<RectTransform>();
+                rect.sizeDelta = new Vector2(160, 30);
+            }
+            
+            UpdateToggleText();
+            toggleEquippedObject.SetActive(false);
+
             return recycleObject;
         }
 
@@ -116,6 +139,28 @@ namespace ValheimRecycle
             InventoryGui.m_instance.m_tabUpgrade.interactable = true;
             InventoryGui.m_instance.UpdateCraftingPanel(false);
 
+        }
+
+        internal void ToggleEquipped()
+        {
+            showEquippedAndHotbar.Value = !showEquippedAndHotbar.Value;
+            Config.Save(); // Save to disk immediately so it persists
+            UpdateToggleText();
+            InventoryGui.m_instance.UpdateCraftingPanel(false);
+        }
+
+        internal void UpdateToggleText()
+        {
+            if (toggleEquippedObject != null)
+            {
+                var text = toggleEquippedObject.GetComponentInChildren<TMP_Text>();
+                if (text != null)
+                {
+                    text.text = showEquippedAndHotbar.Value ? "[X] Include Equipped" : "[ ] Include Equipped";
+                    text.fontSize = 16;
+                    text.alignment = TextAlignmentOptions.Right;
+                }
+            }
         }
 
         internal void RebuildRecycleTab()
