@@ -8,7 +8,7 @@ using ValheimRecycle.GameClasses;
 
 namespace ValheimRecycle
 {
-    [BepInPlugin("org.lafchi.plugins.valheim_recycle", "Valheim Recycle", "5.0.4")]
+    [BepInPlugin("org.lafchi.plugins.valheim_recycle", "Valheim Recycle", "5.0.5")]
     [BepInProcess("valheim.exe")]
     public class ValheimRecycle : BaseUnityPlugin
     {
@@ -39,7 +39,7 @@ namespace ValheimRecycle
 
         internal void Awake()
         {
-            Logger.LogInfo("AWAKE - ValheimRecycle 5.0.4");
+            Logger.LogInfo("AWAKE - ValheimRecycle 5.0.5");
             instance = this;
             harmony = new Harmony("org.lafchi.plugins.valheim_recycle");
             harmony.PatchAll();
