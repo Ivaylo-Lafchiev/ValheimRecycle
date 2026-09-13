@@ -14,25 +14,35 @@ namespace ValheimRecycle
         public static bool HaveEmptySlotsForRecipe(Inventory inventory, Recipe recipe, int quality)
         {
             int emptySlots = inventory.GetEmptySlots();
-            int requiredSlots = 0;
+            int newSlotsNeeded = 0;
 
             foreach (Piece.Requirement req in recipe.m_resources)
             {
-                if (req.m_recover && GetModifiedAmount(quality, req) > 0)
+                if (req.m_resItem && !req.m_upgraderResource)
                 {
-                    requiredSlots++;
+                    int amount = GetModifiedAmount(quality, req);
+                    if (amount > 0)
+                    {
+                        int freeStackSpace = inventory.FindFreeStackSpace(req.m_resItem.m_itemData.m_shared.m_name, req.m_resItem.m_itemData.m_worldLevel);
+                        int amountNeedingNewSlots = Mathf.Max(0, amount - freeStackSpace);
+                        
+                        if (amountNeedingNewSlots > 0)
+                        {
+                            int maxStackSize = req.m_resItem.m_itemData.m_shared.m_maxStackSize;
+                            newSlotsNeeded += Mathf.CeilToInt((float)amountNeedingNewSlots / maxStackSize);
+                        }
+                    }
                     if (recipe.m_requireOnlyOneIngredient) break;
                 }
             }
-            if (emptySlots >= requiredSlots) return true;
-            return false;
+            return emptySlots >= newSlotsNeeded;
         }
 
         public static void AddResources(Inventory inventory, Recipe recipe, int qualityLevel)
         {
             foreach (Piece.Requirement requirement in recipe.m_resources)
             {
-                if (requirement.m_resItem && requirement.m_recover)
+                if (requirement.m_resItem && !requirement.m_upgraderResource)
                 {
 
                     int amount = GetModifiedAmount(qualityLevel + 1, requirement);

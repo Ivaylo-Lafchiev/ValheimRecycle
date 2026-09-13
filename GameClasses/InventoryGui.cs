@@ -279,7 +279,7 @@ namespace ValheimRecycle
                 bool foundFirst = false;
                 foreach(var r in originalResources)
                 {
-                    if (!r.m_recover) continue;
+                    if (r.m_upgraderResource) continue;
                     if (recipe.m_requireOnlyOneIngredient && foundFirst) continue;
                     
                     filtered.Add(r);
